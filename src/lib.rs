@@ -14,6 +14,11 @@ pub fn degree(dense_array: Vec<u32>) -> u32 {
     (dense_array.len() - 1).try_into().unwrap()
 }
 
+/*  
+    This function expands any two polynomials at a time i.e. y = (x - a)(x - b) is done in following steps 
+    y += x * x; result += x * -b; result += -a * x; result += -a * -b
+    then result is returned
+*/
 pub fn multiply_poly(p1: &[f64], p2: &[f64]) -> Vec<f64> {
     let n1 = p1.len();
     let n2 = p2.len();
@@ -43,7 +48,7 @@ pub fn interpolate(points: Vec<(f64, f64)>) -> Vec<f64> {
             let (x_j, _) = points[j];
             
             // Create (x - x_j) term
-            let term = vec![-x_j, 1.0];  // coefficients of (-x_j + 1.0x) is taken recall that -x_j is a constant hence why it is used in full
+            let term = vec![-x_j, 1.0];  // coefficients of (-x_j + 1.0x) is taken. Recall that -x_j is a constant hence why it is used in full
             numerator = multiply_poly(&numerator, &term);
             denominator *= x_i - x_j;
         }
