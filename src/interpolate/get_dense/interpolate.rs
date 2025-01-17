@@ -1,4 +1,4 @@
-use crate::interpolate::get_dense::expansion;
+use crate::interpolate::expansion;
 
 pub fn interpolate_dense(points: Vec<(f64, f64)>) -> Vec<f64> {
     let n = points.len();

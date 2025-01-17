@@ -9,6 +9,7 @@ mod tests {
     use crate::get_degree;
     use crate::evaluate::{dense, sparse};
     use crate::interpolate::get_dense::interpolate;
+    use crate::interpolate::get_sparse;
 
     #[test]
     fn test_dense_evaluate() {
@@ -34,9 +35,16 @@ mod tests {
     }
 
     #[test]
-    fn test_interpolate() {
+    fn test_dense_interpolate() {
         let points = vec![(0.0, 5.0), (1.0, 7.0), (2.0, 21.0), (3.0, 59.0)];
         let result = interpolate::interpolate_dense(points);
         assert_eq!(result, vec![5.0, 0.0, 0.0, 2.0]);
+    }
+
+    #[test]
+    fn test_sparse_interpolate() {
+        let points = vec![(0.0, 5.0), (1.0, 7.0), (2.0, 21.0), (3.0, 59.0)];
+        let result = get_sparse::interpolate::interpolate_sparse(points);
+        assert_eq!(result, vec![(2.0, 3.0), (5.0, 0.0)])
     }
 }
