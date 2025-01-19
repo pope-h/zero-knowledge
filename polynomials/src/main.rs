@@ -9,11 +9,11 @@ fn main() {
     // Split the secret into shares
     let shares = generate_shares(secret, threshold, num_shares);
     println!("Shares: {:?}", &shares);
-    
+
     // Can reconstruct with any threshold or more shares
-    let some_shares = &shares[2..7];  // Using shares 2, 3, 4, 5, and 6
+    let some_shares = &shares[2..7]; // Using shares 2, 3, 4, 5, and 6
     let reconstructed = reconstruct_secret(some_shares, threshold);
-    
+
     println!("Original secret: {}", secret);
     println!("Reconstructed secret: {}", reconstructed);
 }

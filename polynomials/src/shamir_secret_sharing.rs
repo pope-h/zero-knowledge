@@ -1,7 +1,7 @@
 use core::panic;
 
-use rand::Rng;
 use crate::UnivariatePoly;
+use rand::Rng;
 
 #[derive(Debug)]
 pub struct ShamirShare {
@@ -13,7 +13,6 @@ impl ShamirShare {
     pub fn new(x: f64, y: f64) -> Self {
         ShamirShare { x, y }
     }
-    
 }
 
 pub fn generate_shares(secret: f64, threshold: u8, num_shares: u8) -> Vec<ShamirShare> {
@@ -21,11 +20,15 @@ pub fn generate_shares(secret: f64, threshold: u8, num_shares: u8) -> Vec<Shamir
         panic!("Threshold must be less than or equal to number of shares")
     }
 
-    let polynomial = generate_random_polynomial(secret, threshold);
+    let polynomial = generate_random_polynomial(secret, threshold); // This is done filling up an array already having the secret at position 0 with other random numbers
     println!("Generated random polynomial: {:?}", polynomial);
-    let x_values = generate_x_values(num_shares);
+    let x_values = generate_x_values(num_shares); // This is just generating numbers from 1 to be used as x values for the generated polynomial
 
-    x_values.iter().map(|x| ShamirShare::new(*x, polynomial.evaluate(*x))).collect()
+    // This then pairs the x values with the y values gotten from evaluating the polynomial at the x values
+    x_values
+        .iter()
+        .map(|x| ShamirShare::new(*x, polynomial.evaluate(*x)))
+        .collect()
 }
 
 // generate random x values
@@ -84,10 +87,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Not enough shares")]
     fn test_insufficient_shares() {
-        let shares = vec![
-            ShamirShare::new(1.0, 10.0),
-            ShamirShare::new(2.0, 20.0),
-        ];
+        let shares = vec![ShamirShare::new(1.0, 10.0), ShamirShare::new(2.0, 20.0)];
         reconstruct_secret(&shares, 3);
     }
 }
