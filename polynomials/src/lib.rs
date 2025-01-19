@@ -148,9 +148,6 @@ impl Product for UnivariatePoly {
 
 #[cfg(test)]
 mod test {
-    use rand::Rng;
-    use crate::shamir_secret_sharing::{generate_points, generate_x_values};
-
     use crate::UnivariatePoly;
 
     fn poly_1() -> UnivariatePoly {
@@ -165,18 +162,6 @@ mod test {
         UnivariatePoly {
             coefficient: [vec![3.0, 4.0], vec![0.0; 9], vec![5.0]].concat(),
         }
-    }
-
-    fn generate_threshold() -> u8 {
-        rand::thread_rng().gen_range(2, 10)
-    }
-
-    fn generate_x_max() -> u32 {
-        rand::thread_rng().gen_range(5, 10)
-    }
-
-    fn generate_y_max() -> u32 {
-        rand::thread_rng().gen_range(11, 20)
     }
 
     #[test]
@@ -225,31 +210,5 @@ mod test {
 
         // let new_check = UnivariatePoly::interpolate(vec![0.0, 1.0, 2.0, 3.0, 5.0, 10.0], vec![5.0, 7.0, 21.0, 59.0, 255.0, 2005.0]);
         // assert_eq!(new_check.coefficient, vec![5.0, 0.0, 0.0, 2.0]);
-    }
-
-    // TESTING SHAMIR SECRET SHARING
-
-    #[test]
-    fn test_generate_points() {
-        let num_points = generate_threshold();
-        let x_max = generate_x_max();
-        let y_max = generate_y_max();
-
-        let (xs, ys) = generate_points(num_points, x_max, y_max);
-
-        assert_eq!(xs.len(), num_points as usize);
-        assert_eq!(ys.len(), num_points as usize);
-    }
-
-    #[test]
-    fn test_create_polynomial() {
-        let num_points = generate_threshold();
-        let x_max = generate_x_max();
-        let y_max = generate_y_max();
-
-        let (xs, ys) = generate_points(num_points, x_max, y_max);
-        let poly = UnivariatePoly::interpolate(xs.clone(), ys.clone());
-
-        assert_eq!(poly.degree(), num_points as usize - 1);
     }
 }
