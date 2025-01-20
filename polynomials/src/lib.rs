@@ -2,15 +2,16 @@ pub mod shamir_secret_sharing;
 
 use std::iter::{Product, Sum};
 use std::ops::{Add, Mul};
+use ark_ff::PrimeField;
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct UnivariatePoly {
+pub struct UnivariatePoly<F: PrimeField> {
     // 1 coefficient for each power of x
-    pub coefficient: Vec<f64>,
+    pub coefficient: Vec<F>,
 }
 
-impl UnivariatePoly {
-    fn new(coefficient: Vec<f64>) -> Self {
+impl<F: PrimeField> UnivariatePoly<F> {
+    fn new(coefficient: Vec<F>) -> Self {
         UnivariatePoly { coefficient }
     }
 
@@ -18,7 +19,7 @@ impl UnivariatePoly {
         self.coefficient.len() - 1
     }
 
-    pub fn evaluate(&self, x: f64) -> f64 {
+    pub fn evaluate(&self, x: F) -> F {
         // self.coefficient
         //     .iter()
         //     .enumerate()
@@ -45,7 +46,7 @@ impl UnivariatePoly {
             .unwrap()
     }
 
-    pub fn interpolate(xs: Vec<f64>, ys: Vec<f64>) -> Self {
+    pub fn interpolate(xs: Vec<F>, ys: Vec<F>) -> Self {
         xs.iter()
             .zip(ys.iter())
             .map(|(x, y)| Self::basis(x, &xs).scalar_mul(y))
@@ -53,9 +54,9 @@ impl UnivariatePoly {
     }
 
     // Multiplies an array with an integer
-    fn scalar_mul(&self, scalar: &f64) -> Self {
+    fn scalar_mul(&self, scalar: &F) -> Self {
         UnivariatePoly {
-            coefficient: self.coefficient.iter().map(|x| x * scalar).collect(),
+            coefficient: self.coefficient.iter().map(|x| *x * scalar).collect(),
         }
     }
 
@@ -69,29 +70,29 @@ impl UnivariatePoly {
 
         [1, 2, 3] -> [1, 3] -> [(x - 1), (x - 3)]
     */
-    fn basis(x: &f64, interpolating_set: &[f64]) -> Self {
+    fn basis(x: &F, interpolating_set: &[F]) -> Self {
         //numerator
-        let numerator: UnivariatePoly = interpolating_set
+        let numerator: UnivariatePoly<F> = interpolating_set
             .iter()
             .filter(|val| *val != x)
-            .map(|x_i| UnivariatePoly::new(vec![-x_i, 1.0]))
+            .map(|x_i| UnivariatePoly::new(vec![-*x_i, F::one()]))
             .product();
 
         // denominator
-        let denominator = 1.0 / numerator.evaluate(*x);
+        let denominator = F::one() / numerator.evaluate(*x);
 
         numerator.scalar_mul(&denominator)
     }
 }
 
-impl Mul for &UnivariatePoly {
-    type Output = UnivariatePoly;
+impl<F: PrimeField> Mul for &UnivariatePoly<F> {
+    type Output = UnivariatePoly<F>;
 
     // Multiplying two polynomials or arrays
     fn mul(self, rhs: Self) -> Self::Output {
         // mul for dense
         let new_degree = self.degree() + rhs.degree();
-        let mut result = vec![0.0; new_degree + 1];
+        let mut result = vec![F::zero(); new_degree + 1];
         for i in 0..self.coefficient.len() {
             for j in 0..rhs.coefficient.len() {
                 result[i + j] += self.coefficient[i] * rhs.coefficient[j];
@@ -104,8 +105,8 @@ impl Mul for &UnivariatePoly {
 }
 
 // This is why it is important to input the array in order of power from smallest to biggest to make it easier to perform actions on them
-impl Add for &UnivariatePoly {
-    type Output = UnivariatePoly;
+impl<F: PrimeField> Add for &UnivariatePoly<F> {
+    type Output = UnivariatePoly<F>;
 
     // adding two polynomials
     fn add(self, rhs: Self) -> Self::Output {
@@ -126,9 +127,9 @@ impl Add for &UnivariatePoly {
     }
 }
 
-impl Sum for UnivariatePoly {
+impl<F: PrimeField> Sum for UnivariatePoly<F> {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        let mut result = UnivariatePoly::new(vec![0.0]);
+        let mut result = UnivariatePoly::new(vec![F::zero()]);
         for item in iter {
             result = &result + &item;
         }
@@ -136,9 +137,9 @@ impl Sum for UnivariatePoly {
     }
 }
 
-impl Product for UnivariatePoly {
+impl<F: PrimeField> Product for UnivariatePoly<F> {
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        let mut result = UnivariatePoly::new(vec![1.0]);
+        let mut result = UnivariatePoly::new(vec![F::one()]);
         for item in iter {
             result = &result * &item;
         }
@@ -149,18 +150,19 @@ impl Product for UnivariatePoly {
 #[cfg(test)]
 mod test {
     use crate::UnivariatePoly;
+    use ark_bn254::Fq;
 
-    fn poly_1() -> UnivariatePoly {
+    fn poly_1() -> UnivariatePoly<Fq> {
         // f(x) = 1 + 2x + 3x^2
         UnivariatePoly {
-            coefficient: vec![1.0, 2.0, 3.0],
+            coefficient: vec![Fq::from(1), Fq::from(2), Fq::from(3)],
         }
     }
 
-    fn poly_2() -> UnivariatePoly {
+    fn poly_2() -> UnivariatePoly<Fq> {
         // f(x) = 4x + 3 + 5x^11
         UnivariatePoly {
-            coefficient: [vec![3.0, 4.0], vec![0.0; 9], vec![5.0]].concat(),
+            coefficient: [vec![Fq::from(3), Fq::from(4)], vec![Fq::from(0); 9], vec![Fq::from(5)]].concat(),
         }
     }
 
@@ -171,7 +173,7 @@ mod test {
 
     #[test]
     fn test_evaluation() {
-        assert_eq!(poly_1().evaluate(2.0), 17.0);
+        assert_eq!(poly_1().evaluate(Fq::from(2)), Fq::from(17));
     }
 
     #[test]
@@ -182,7 +184,7 @@ mod test {
         // r(x) = 4 + 6x + 3x^2 + 5x^11
         assert_eq!(
             (&poly_1() + &poly_2()).coefficient,
-            [vec![4.0, 6.0, 3.0], vec![0.0; 8], vec![5.0]].concat()
+            [vec![Fq::from(4), Fq::from(6), Fq::from(3)], vec![Fq::from(0); 8], vec![Fq::from(5)]].concat()
         )
     }
 
@@ -190,23 +192,23 @@ mod test {
     fn test_mul() {
         // f(x) = 5 + 2x^2
         let poly_1 = UnivariatePoly {
-            coefficient: vec![5.0, 0.0, 2.0],
+            coefficient: vec![Fq::from(5), Fq::from(0), Fq::from(2)],
         };
         // f(x) = 2x + 6
         let poly_2 = UnivariatePoly {
-            coefficient: vec![6.0, 2.0],
+            coefficient: vec![Fq::from(6), Fq::from(2)],
         };
 
         // r(x) = 30 + 10x + 12x^2 + 4x^3
-        assert_eq!((&poly_1 * &poly_2).coefficient, vec![30.0, 10.0, 12.0, 4.0]);
+        assert_eq!((&poly_1 * &poly_2).coefficient, vec![Fq::from(30), Fq::from(10), Fq::from(12), Fq::from(4)]);
     }
 
     #[test]
     fn test_interpolate() {
         // f(x) = 2x
         // [(2, 4), (4, 8)]
-        let maybe_2x = UnivariatePoly::interpolate(vec![2.0, 4.0], vec![4.0, 8.0]);
-        assert_eq!(maybe_2x.coefficient, vec![0.0, 2.0]);
+        let maybe_2x = UnivariatePoly::interpolate(vec![Fq::from(2), Fq::from(4)], vec![Fq::from(4), Fq::from(8)]);
+        assert_eq!(maybe_2x.coefficient, vec![Fq::from(0), Fq::from(2)]);
 
         // let new_check = UnivariatePoly::interpolate(vec![0.0, 1.0, 2.0, 3.0, 5.0, 10.0], vec![5.0, 7.0, 21.0, 59.0, 255.0, 2005.0]);
         // assert_eq!(new_check.coefficient, vec![5.0, 0.0, 0.0, 2.0]);

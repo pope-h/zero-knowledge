@@ -2,20 +2,21 @@ use core::panic;
 
 use crate::UnivariatePoly;
 use rand::Rng;
+use ark_ff::PrimeField;
 
 #[derive(Debug)]
-pub struct ShamirShare {
-    pub x: f64,
-    pub y: f64,
+pub struct ShamirShare<F: PrimeField> {
+    pub x: F,
+    pub y: F,
 }
 
-impl ShamirShare {
-    pub fn new(x: f64, y: f64) -> Self {
+impl<F: PrimeField> ShamirShare<F> {
+    pub fn new(x: F, y: F) -> Self {
         ShamirShare { x, y }
     }
 }
 
-pub fn generate_shares(secret: f64, threshold: u8, num_shares: u8) -> Vec<ShamirShare> {
+pub fn generate_shares<F: PrimeField>(secret: F, threshold: u8, num_shares: u8) -> Vec<ShamirShare<F>> {
     if threshold > num_shares {
         panic!("Threshold must be less than or equal to number of shares")
     }
@@ -31,42 +32,43 @@ pub fn generate_shares(secret: f64, threshold: u8, num_shares: u8) -> Vec<Shamir
         .collect()
 }
 
-// generate random x values
-pub fn generate_x_values(num_shares: u8) -> Vec<f64> {
-    (1..=num_shares).map(|x| x as f64).collect()
+// generate x values i.e. 1, 2, 3, 4, 5, 6, 7
+pub fn generate_x_values<F: PrimeField>(num_shares: u8) -> Vec<F> {
+    (1..=num_shares).map(|x| F::from(x)).collect()
 }
 
-fn generate_random_polynomial(secret: f64, threshold: u8) -> UnivariatePoly {
+fn generate_random_polynomial<F: PrimeField>(secret: F, threshold: u8) -> UnivariatePoly<F> {
     let mut rng = rand::thread_rng();
     let mut coefficients = vec![secret];
 
     for _ in 1..threshold {
-        coefficients.push(rng.gen_range(0, 100) as f64);
+        coefficients.push(F::from(rng.gen_range(0, 100)));
     }
 
     UnivariatePoly::new(coefficients)
 }
 
-pub fn reconstruct_secret(shares: &[ShamirShare], threshold: u8) -> f64 {
+pub fn reconstruct_secret<F: PrimeField>(shares: &[ShamirShare<F>], threshold: u8) -> F {
     if shares.len() < threshold as usize {
         panic!("Not enough shares to reconstruct secret")
     }
 
-    let xs: Vec<f64> = shares.iter().map(|share| share.x).collect();
-    let ys: Vec<f64> = shares.iter().map(|share| share.y).collect();
+    let xs: Vec<F> = shares.iter().map(|share| F::from(share.x)).collect();
+    let ys: Vec<F> = shares.iter().map(|share| F::from(share.y)).collect();
 
-    UnivariatePoly::interpolate(xs, ys).evaluate(0.0)
+    UnivariatePoly::interpolate(xs, ys).evaluate(F::from(0))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ark_bn254::Fq;
 
     #[test]
     fn test_secret_sharing() {
-        let secret = 42.0;
+        let secret = Fq::from(42);
         let threshold = 3;
-        let num_shares = 5;
+        let num_shares = 7;
 
         // Generate shares
         let shares = generate_shares(secret, threshold, num_shares);
@@ -77,17 +79,17 @@ mod tests {
 
         // Test reconstruction with exactly threshold shares
         let reconstructed = reconstruct_secret(&shares[0..threshold as usize], threshold);
-        assert!((reconstructed - secret).abs() < 1e-10);
+        assert_eq!(reconstructed, secret);
 
         // Test reconstruction with more than threshold shares
         let reconstructed = reconstruct_secret(&shares[0..4], threshold);
-        assert!((reconstructed - secret).abs() < 1e-10);
+        assert_eq!(reconstructed, secret);
     }
 
     #[test]
     #[should_panic(expected = "Not enough shares")]
     fn test_insufficient_shares() {
-        let shares = vec![ShamirShare::new(1.0, 10.0), ShamirShare::new(2.0, 20.0)];
+        let shares = vec![ShamirShare::new(Fq::from(1), Fq::from(10)), ShamirShare::new(Fq::from(2), Fq::from(20))];
         reconstruct_secret(&shares, 3);
     }
 }

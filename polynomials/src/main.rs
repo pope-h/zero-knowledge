@@ -1,8 +1,9 @@
 use polynomials::*;
 use shamir_secret_sharing::*;
+use ark_bn254::Fq;
 
 fn main() {
-    let secret = 4.0;
+    let secret = Fq::from(4);
     let threshold = 3;
     let num_shares = 7;
 
