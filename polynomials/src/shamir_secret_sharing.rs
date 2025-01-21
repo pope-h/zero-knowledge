@@ -1,7 +1,7 @@
 use core::panic;
 
 use crate::UnivariatePoly;
-use rand::Rng;
+use rand;
 use ark_ff::PrimeField;
 
 #[derive(Debug)]
@@ -42,7 +42,7 @@ fn generate_random_polynomial<F: PrimeField>(secret: F, threshold: u8) -> Univar
     let mut coefficients = vec![secret];
 
     for _ in 1..threshold {
-        coefficients.push(F::from(rng.gen_range(0, 100)));
+        coefficients.push(F::rand(&mut rng));
     }
 
     UnivariatePoly::new(coefficients)
