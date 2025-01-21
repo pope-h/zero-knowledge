@@ -213,4 +213,38 @@ mod test {
         // let new_check = UnivariatePoly::interpolate(vec![0.0, 1.0, 2.0, 3.0, 5.0, 10.0], vec![5.0, 7.0, 21.0, 59.0, 255.0, 2005.0]);
         // assert_eq!(new_check.coefficient, vec![5.0, 0.0, 0.0, 2.0]);
     }
+
+    #[test]
+    fn test_fibonacci() {
+        // f(x) = 1 + x
+        // [(0, 0), (1, 1), (2, 1), (3, 2), (4, 3), (5, 5), (6, 8), (7, 13)]
+
+        let fib = UnivariatePoly::interpolate(
+            vec![Fq::from(0), Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5), Fq::from(6), Fq::from(7)],
+            vec![Fq::from(0), Fq::from(1), Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(5), Fq::from(8), Fq::from(13)],
+        );
+
+        let check_1 = fib.evaluate(Fq::from(4));
+        let check_2 = fib.evaluate(Fq::from(5));
+        let check_3 = fib.evaluate(Fq::from(6));
+        let check_sum = check_1 + check_2;
+
+        assert_eq!(check_3, check_sum);
+    }
+
+    #[test]
+    #[should_panic(expected = "assertion `left == right` failed\n  left: 189\n right: 55")]
+    fn test_unequal_output() {
+        let fib = UnivariatePoly::interpolate(
+            vec![Fq::from(0), Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5), Fq::from(6), Fq::from(7)],
+            vec![Fq::from(0), Fq::from(1), Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(5), Fq::from(8), Fq::from(13)],
+        );
+
+        let check_1 = fib.evaluate(Fq::from(7));
+        let check_2 = fib.evaluate(Fq::from(8));
+        let check_3 = fib.evaluate(Fq::from(9));
+        let check_sum = check_1 + check_2;
+
+        assert_eq!(check_3, check_sum);
+    }
 }
