@@ -1,6 +1,6 @@
+use ark_bn254::Fq;
 use polynomials::*;
 use shamir_secret_sharing::*;
-use ark_bn254::Fq;
 
 fn main() {
     let secret = Fq::from(4);

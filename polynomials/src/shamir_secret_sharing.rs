@@ -1,8 +1,8 @@
 use core::panic;
 
 use crate::UnivariatePoly;
-use rand;
 use ark_ff::PrimeField;
+use rand;
 
 #[derive(Debug)]
 pub struct ShamirShare<F: PrimeField> {
@@ -16,7 +16,11 @@ impl<F: PrimeField> ShamirShare<F> {
     }
 }
 
-pub fn generate_shares<F: PrimeField>(secret: F, threshold: u8, num_shares: u8) -> Vec<ShamirShare<F>> {
+pub fn generate_shares<F: PrimeField>(
+    secret: F,
+    threshold: u8,
+    num_shares: u8,
+) -> Vec<ShamirShare<F>> {
     if threshold > num_shares {
         panic!("Threshold must be less than or equal to number of shares")
     }
@@ -89,7 +93,10 @@ mod tests {
     #[test]
     #[should_panic(expected = "Not enough shares")]
     fn test_insufficient_shares() {
-        let shares = vec![ShamirShare::new(Fq::from(1), Fq::from(10)), ShamirShare::new(Fq::from(2), Fq::from(20))];
+        let shares = vec![
+            ShamirShare::new(Fq::from(1), Fq::from(10)),
+            ShamirShare::new(Fq::from(2), Fq::from(20)),
+        ];
         reconstruct_secret(&shares, 3);
     }
 }

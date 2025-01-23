@@ -1,8 +1,9 @@
+pub mod multi_linear;
 pub mod shamir_secret_sharing;
 
+use ark_ff::PrimeField;
 use std::iter::{Product, Sum};
 use std::ops::{Add, Mul};
-use ark_ff::PrimeField;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct UnivariatePoly<F: PrimeField> {
@@ -162,7 +163,12 @@ mod test {
     fn poly_2() -> UnivariatePoly<Fq> {
         // f(x) = 4x + 3 + 5x^11
         UnivariatePoly {
-            coefficient: [vec![Fq::from(3), Fq::from(4)], vec![Fq::from(0); 9], vec![Fq::from(5)]].concat(),
+            coefficient: [
+                vec![Fq::from(3), Fq::from(4)],
+                vec![Fq::from(0); 9],
+                vec![Fq::from(5)],
+            ]
+            .concat(),
         }
     }
 
@@ -184,7 +190,12 @@ mod test {
         // r(x) = 4 + 6x + 3x^2 + 5x^11
         assert_eq!(
             (&poly_1() + &poly_2()).coefficient,
-            [vec![Fq::from(4), Fq::from(6), Fq::from(3)], vec![Fq::from(0); 8], vec![Fq::from(5)]].concat()
+            [
+                vec![Fq::from(4), Fq::from(6), Fq::from(3)],
+                vec![Fq::from(0); 8],
+                vec![Fq::from(5)]
+            ]
+            .concat()
         )
     }
 
@@ -200,14 +211,20 @@ mod test {
         };
 
         // r(x) = 30 + 10x + 12x^2 + 4x^3
-        assert_eq!((&poly_1 * &poly_2).coefficient, vec![Fq::from(30), Fq::from(10), Fq::from(12), Fq::from(4)]);
+        assert_eq!(
+            (&poly_1 * &poly_2).coefficient,
+            vec![Fq::from(30), Fq::from(10), Fq::from(12), Fq::from(4)]
+        );
     }
 
     #[test]
     fn test_interpolate() {
         // f(x) = 2x
         // [(2, 4), (4, 8)]
-        let maybe_2x = UnivariatePoly::interpolate(vec![Fq::from(2), Fq::from(4)], vec![Fq::from(4), Fq::from(8)]);
+        let maybe_2x = UnivariatePoly::interpolate(
+            vec![Fq::from(2), Fq::from(4)],
+            vec![Fq::from(4), Fq::from(8)],
+        );
         assert_eq!(maybe_2x.coefficient, vec![Fq::from(0), Fq::from(2)]);
 
         // let new_check = UnivariatePoly::interpolate(vec![0.0, 1.0, 2.0, 3.0, 5.0, 10.0], vec![5.0, 7.0, 21.0, 59.0, 255.0, 2005.0]);
@@ -220,8 +237,26 @@ mod test {
         // [(0, 0), (1, 1), (2, 1), (3, 2), (4, 3), (5, 5), (6, 8), (7, 13)]
 
         let fib = UnivariatePoly::interpolate(
-            vec![Fq::from(0), Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5), Fq::from(6), Fq::from(7)],
-            vec![Fq::from(0), Fq::from(1), Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(5), Fq::from(8), Fq::from(13)],
+            vec![
+                Fq::from(0),
+                Fq::from(1),
+                Fq::from(2),
+                Fq::from(3),
+                Fq::from(4),
+                Fq::from(5),
+                Fq::from(6),
+                Fq::from(7),
+            ],
+            vec![
+                Fq::from(0),
+                Fq::from(1),
+                Fq::from(1),
+                Fq::from(2),
+                Fq::from(3),
+                Fq::from(5),
+                Fq::from(8),
+                Fq::from(13),
+            ],
         );
 
         let check_1 = fib.evaluate(Fq::from(4));
@@ -236,8 +271,26 @@ mod test {
     #[should_panic(expected = "assertion `left == right` failed\n  left: 189\n right: 55")]
     fn test_unequal_output() {
         let fib = UnivariatePoly::interpolate(
-            vec![Fq::from(0), Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5), Fq::from(6), Fq::from(7)],
-            vec![Fq::from(0), Fq::from(1), Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(5), Fq::from(8), Fq::from(13)],
+            vec![
+                Fq::from(0),
+                Fq::from(1),
+                Fq::from(2),
+                Fq::from(3),
+                Fq::from(4),
+                Fq::from(5),
+                Fq::from(6),
+                Fq::from(7),
+            ],
+            vec![
+                Fq::from(0),
+                Fq::from(1),
+                Fq::from(1),
+                Fq::from(2),
+                Fq::from(3),
+                Fq::from(5),
+                Fq::from(8),
+                Fq::from(13),
+            ],
         );
 
         let check_1 = fib.evaluate(Fq::from(7));
