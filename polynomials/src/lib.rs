@@ -1,3 +1,4 @@
+pub mod fft;
 pub mod multi_linear;
 pub mod shamir_secret_sharing;
 

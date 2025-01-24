@@ -175,16 +175,13 @@ mod test {
         let eval_value_a = Fq::from(4);
 
         let eval_value_b = Fq::from(2);
-        let result = multi_linear_poly.partial_evaluate(eval_value_a, eval_value_position).partial_evaluate(eval_value_b, eval_value_position);
+        let result = multi_linear_poly
+            .partial_evaluate(eval_value_a, eval_value_position)
+            .partial_evaluate(eval_value_b, eval_value_position);
 
         assert_eq!(
             result.computation,
-            vec![
-                Fq::from(40),
-                Fq::from(48),
-                Fq::from(52),
-                Fq::from(60)
-            ]
+            vec![Fq::from(40), Fq::from(48), Fq::from(52), Fq::from(60)]
         );
     }
 
