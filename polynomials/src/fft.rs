@@ -67,7 +67,7 @@ impl<F: FftField> FastFourierTransform<F> {
     }
 
     // this is the inverse IFFT function i.e. converting Values => Coeff
-    pub fn interpolate(&self) -> Self {
+    fn interpolation(&self) -> Self {
         if !self.is_power_of_two() {
             panic!("The computation array must be in the power of 2");
         }
@@ -82,8 +82,8 @@ impl<F: FftField> FastFourierTransform<F> {
 
         let (even, odd) = self.split_array();
 
-        let y_even = FastFourierTransform::new(even).interpolate();
-        let y_odd = FastFourierTransform::new(odd).interpolate();
+        let y_even = FastFourierTransform::new(even).interpolation();
+        let y_odd = FastFourierTransform::new(odd).interpolation();
 
         let mut y = vec![F::zero(); n as usize];
 
@@ -93,10 +93,18 @@ impl<F: FftField> FastFourierTransform<F> {
             y[(i + n / 2) as usize] =
                 y_even.coefficients[i as usize] - (w.pow(&[i]) * y_odd.coefficients[i as usize]);
         }
-        
-        // let y_divided: Vec<F> = y.iter_mut().map(|elem| *elem / F::from(self.coefficients.len() as u64)).collect();
 
         FastFourierTransform { coefficients: y }
+    }
+
+    // This function divides the values by n
+    pub fn interpolate(&self) -> Self {
+        let n = self.coefficients.len() as u64;
+        let y = self.interpolation().coefficients;
+        let y_divided: Vec<F> = y.iter().map(|elem| *elem / F::from(n)).collect();
+        println!("{:?}", y);
+
+        FastFourierTransform { coefficients: y_divided }
     }
 }
 
@@ -108,13 +116,12 @@ mod tests {
     #[test]
     fn test_fft() {
         let coefficients = vec![Fr::from(5), Fr::from(0), Fr::from(0), Fr::from(2)];
-        let undivided_coefficients = vec![Fr::from(20), Fr::from(0), Fr::from(0), Fr::from(8)];
 
         let fft = FastFourierTransform::new(coefficients.clone());
         let values = fft.evaluate();
         let interpolated = values.interpolate();
 
         // assert_eq!(interpolated.coefficients, coefficients);
-        assert_eq!(interpolated.coefficients, undivided_coefficients);
+        assert_eq!(interpolated.coefficients, coefficients);
     }
 }
