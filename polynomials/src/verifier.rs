@@ -53,11 +53,13 @@ impl<F: PrimeField> VerifierStruct<F> {
     }
 
     // perform a final check to see if the final_eval_poly is equal to the final_eval_poly from the prover
+    /*
+        Note that for the final evaluation, the verifier will not send the last challenge point to the prover 
+        He would instead use the last challenge to evaluate the final polynomial    
+     */
     pub fn verify_proof(&self) -> bool {
         // convert the final_eval_poly to a univariate polynomial and evaluate it at the first challenge
         let mut final_eval: MultiLinearPoly<F> = MultiLinearPoly::new(self.final_eval_poly.clone());
-        println!("Final eval is {:?}", final_eval);
-        println!("Challenge is {:?}", self.challenges[self.challenges.len() - 1]);
         let final_eval_at_challenge = final_eval.partial_evaluate(self.challenges[self.challenges.len() - 1], 0);
 
         let mut this_computation = self.bh_computation.clone();
