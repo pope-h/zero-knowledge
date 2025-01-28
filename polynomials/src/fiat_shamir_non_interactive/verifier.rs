@@ -1,5 +1,5 @@
 use ark_ff::PrimeField;
-use crate::{multi_linear::MultiLinearPoly, prover::ProverStruct, transcript::Transcript};
+use crate::{multi_linear::MultiLinearPoly, fiat_shamir_non_interactive::prover::ProverStruct, fiat_shamir_non_interactive::transcript::Transcript};
 
 pub struct VerifierStruct<F: PrimeField> {
     pub bh_computation: MultiLinearPoly<F>,
@@ -71,7 +71,7 @@ impl<F: PrimeField> VerifierStruct<F> {
 
 #[cfg(test)]
 mod test {
-    use crate::verifier::VerifierStruct;
+    use crate::fiat_shamir_non_interactive::verifier::VerifierStruct;
     use ark_bn254::Fq;
 
     fn bh_computation() -> Vec<Fq> {

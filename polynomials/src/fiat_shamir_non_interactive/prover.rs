@@ -1,5 +1,5 @@
 use ark_ff::PrimeField;
-use crate::{multi_linear::MultiLinearPoly, transcript::Transcript};
+use crate::{multi_linear::MultiLinearPoly, fiat_shamir_non_interactive::transcript::Transcript};
 
 #[derive(Debug, Clone)]
 pub struct Proof<F: PrimeField> {

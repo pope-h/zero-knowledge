@@ -1,9 +1,10 @@
 pub mod fft;
 pub mod multi_linear;
 pub mod shamir_secret_sharing;
-pub mod prover;
-pub mod transcript;
-pub mod verifier;
+pub mod fiat_shamir_non_interactive;
+// pub mod prover;
+// pub mod transcript;
+// pub mod verifier;
 
 use ark_ff::PrimeField;
 use std::iter::{Product, Sum};
