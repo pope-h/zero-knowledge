@@ -1,16 +1,28 @@
 use ark_ff::PrimeField;
 use crate::{multi_linear::MultiLinearPoly, transcript::Transcript};
+
+#[derive(Debug, Clone)]
+pub struct Proof<F: PrimeField> {
+    pub claimed_sums: Vec<F>,
+    pub sum_polys: Vec<MultiLinearPoly<F>>,
+}
+
+pub struct FinalState<F: PrimeField> {
+    pub challenges: Vec<F>,
+    pub final_univariate_poly: Vec<F>,
+}
+
 pub struct ProverStruct<F: PrimeField> {
     // boolean hypercube computation
     // added the challenges array and final_univariate_poly to enable final testing
     pub bh_computation: MultiLinearPoly<F>,
-    pub challenges: Vec<F>,
-    pub final_univariate_poly: MultiLinearPoly<F>,
+    pub proof: Proof<F>,
+    pub final_state: FinalState<F>,
 }
 
 impl<F: PrimeField> ProverStruct<F> {
     pub fn new(bh_computation: Vec<F>) -> Self {
-        ProverStruct { bh_computation: MultiLinearPoly::new(bh_computation), challenges: Vec::new(), final_univariate_poly: MultiLinearPoly::new(Vec::new()) }
+        ProverStruct { bh_computation: MultiLinearPoly::new(bh_computation), proof: Proof { claimed_sums: Vec::new(), sum_polys: Vec::new() }, final_state: FinalState { challenges: Vec::new(), final_univariate_poly: Vec::new() } }
     }
 
     pub fn call_partial_evaluate(&mut self, eval_value: F, eval_value_position: usize) -> MultiLinearPoly<F> {
@@ -31,7 +43,7 @@ impl<F: PrimeField> ProverStruct<F> {
         let mut transcript = Transcript::new();
 
         while current_poly_ml.computation.len() > 1 {
-            println!("Starting computation is {:?}", current_poly_ml.computation);
+            // println!("Starting computation is {:?}", current_poly_ml.computation);
             let claimed_sum: F = current_poly_ml.computation.iter().sum();
 
             let half_len = current_poly_ml.computation.len() / 2;
@@ -40,26 +52,34 @@ impl<F: PrimeField> ProverStruct<F> {
             let right_sum = right.iter().sum();
 
             let sum_poly = MultiLinearPoly::new(vec![left_sum, right_sum]);
-            println!("Sum poly is {:?}", sum_poly);
+            // println!("Sum poly is {:?}", sum_poly);
+            self.proof.claimed_sums.push(claimed_sum);
+            self.proof.sum_polys.push(MultiLinearPoly { computation: sum_poly.computation.clone() });
 
             transcript.append(&ProverStruct::convert_to_bytes(vec![claimed_sum]));
             transcript.append(&ProverStruct::convert_to_bytes(sum_poly.computation.clone()));
             let challenge_bytes = transcript.challenge();
             let challenge = ProverStruct::convert_from_bytes(&challenge_bytes)[0];
-            self.challenges.push(challenge);
+            self.final_state.challenges.push(challenge);
 
             current_poly_ml = current_poly_ml.partial_evaluate(challenge, 0);
         }
 
+        self.final_state.final_univariate_poly = current_poly_ml.computation.clone();
         current_poly_ml.computation
+    }
+
+    pub fn get_proof(&self) -> Proof<F> {
+        // println!("Proof is {:?}", self.proof.clone());
+        self.proof.clone()
     }
 
     pub fn verify_proof(&self) -> bool {
         let mut current_poly_ml = MultiLinearPoly::new(self.bh_computation.computation.clone());
 
-        let final_output = current_poly_ml.evaluate(self.challenges.clone());
+        let final_output = current_poly_ml.evaluate(self.final_state.challenges.clone()).computation[0];
             
-        final_output == self.final_univariate_poly
+        final_output == self.final_state.final_univariate_poly[0]
     }
 }
 
@@ -86,14 +106,16 @@ mod test {
             Fq::from(5),
             Fq::from(9),
             Fq::from(8),
-            Fq::from(12),];
+            Fq::from(12)];
         let mut prover = ProverStruct::new(computation);
 
         // let wrong_proof = vec![Fq::from(105)];
-        // prover.final_univariate_poly = MultiLinearPoly::new(wrong_proof);
+        // prover.final_state.final_univariate_poly = wrong_proof;
 
         let proof = prover.generate_proof();
-        prover.final_univariate_poly = MultiLinearPoly::new(proof);
+        prover.final_state.final_univariate_poly = proof.clone();
+        println!("PROOF is {:?}", proof);
+        println!("Final univariate poly is {:?}", prover.final_state.final_univariate_poly);
     
         assert!(prover.verify_proof(), "Proof verification failed");
     }

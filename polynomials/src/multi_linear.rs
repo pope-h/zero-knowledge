@@ -1,6 +1,6 @@
 use ark_ff::{BigInteger, PrimeField};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct MultiLinearPoly<F: PrimeField> {
     // 2a + 3b
     // computation is simply passing in 00, 01, 10, 11 and getting the result in an array
