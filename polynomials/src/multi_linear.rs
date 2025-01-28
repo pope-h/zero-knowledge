@@ -1,4 +1,4 @@
-use ark_ff::PrimeField;
+use ark_ff::{BigInteger, PrimeField};
 
 #[derive(Debug, PartialEq)]
 pub struct MultiLinearPoly<F: PrimeField> {
@@ -70,6 +70,24 @@ impl<F: PrimeField> MultiLinearPoly<F> {
         }
 
         this_computation
+    }
+
+    pub fn to_bytes(computation: Vec<F>) -> Vec<u8> {
+        computation.iter().flat_map(|x| F::into_bigint(*x).to_bytes_be()).collect()
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Vec<F> {
+        let mut computation = Vec::new();
+        let mut i = 0;
+
+        while i < bytes.len() {
+            let mut bytes_array = [0u8; 32];
+            bytes_array.copy_from_slice(&bytes[i..i + 32]);
+            computation.push(F::from_be_bytes_mod_order(&bytes_array));
+            i += 32;
+        }
+
+        computation
     }
 }
 
@@ -224,5 +242,26 @@ mod test {
         let result = multi_linear_poly.evaluate(eval_points);
 
         assert_eq!(result.computation, vec![Fq::from(120)]);
+    }
+
+    #[test]
+    fn test_to_bytes() {
+        let computation = vec![Fq::from(5)];
+        let bytes = MultiLinearPoly::to_bytes(computation);
+
+        assert_eq!(
+            bytes,
+            vec![
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5
+            ]
+        );
+    }
+
+    #[test]
+    fn test_from_bytes() {
+        let bytes = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7];
+        let computation: Vec<Fq> = MultiLinearPoly::from_bytes(&bytes);
+
+        assert_eq!(computation, vec![Fq::from(5), Fq::from(7)]);
     }
 }
