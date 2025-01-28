@@ -1,5 +1,7 @@
 use ark_ff::PrimeField;
-use crate::{multi_linear::MultiLinearPoly, fiat_shamir_non_interactive::prover::ProverStruct, fiat_shamir_non_interactive::transcript::Transcript};
+use crate::{multi_linear::MultiLinearPoly, fiat_shamir_non_interactive::transcript::Transcript};
+
+use super::prover::Proof;
 
 pub struct VerifierStruct<F: PrimeField> {
     pub bh_computation: MultiLinearPoly<F>,
@@ -21,13 +23,8 @@ impl<F: PrimeField> VerifierStruct<F> {
         converted
     }
 
-    pub fn check_proof(&mut self) -> bool {
+    fn check_proof(&mut self, proof: Proof<F>) {
         let mut transcript = Transcript::new();
-
-        // call the get_proof function from the prover
-        let mut prover = ProverStruct::new(self.bh_computation.computation.clone());
-        let _ = prover.generate_proof();
-        let proof = prover.get_proof();
 
         // get the claimed_sums and sum_polys from the proof
         let claimed_sums = proof.claimed_sums;
@@ -37,7 +34,7 @@ impl<F: PrimeField> VerifierStruct<F> {
         for i in 0..sum_polys.len() {
             let sum_poly_i = &sum_polys[i];
             if sum_poly_i.computation.iter().sum::<F>() != claimed_sums[i] {
-                return false;
+                return;
             }
 
             transcript.append(&VerifierStruct::convert_to_bytes(vec![claimed_sums[i]]));
@@ -48,8 +45,6 @@ impl<F: PrimeField> VerifierStruct<F> {
 
             self.final_eval_poly = sum_poly_i.computation.clone();
         }
-
-        true
     }
 
     // perform a final check to see if the final_eval_poly is equal to the final_eval_poly from the prover
@@ -57,7 +52,9 @@ impl<F: PrimeField> VerifierStruct<F> {
         Note that for the final evaluation, the verifier will not send the last challenge point to the prover 
         He would instead use the last challenge to evaluate the final polynomial    
      */
-    pub fn verify_proof(&self) -> bool {
+    pub fn verify_proof(&mut self, proof: Proof<F>) -> bool {
+        self.check_proof(proof);
+
         // convert the final_eval_poly to a univariate polynomial and evaluate it at the first challenge
         let mut final_eval: MultiLinearPoly<F> = MultiLinearPoly::new(self.final_eval_poly.clone());
         let final_eval_at_challenge = final_eval.partial_evaluate(self.challenges[self.challenges.len() - 1], 0);
@@ -71,7 +68,7 @@ impl<F: PrimeField> VerifierStruct<F> {
 
 #[cfg(test)]
 mod test {
-    use crate::fiat_shamir_non_interactive::verifier::VerifierStruct;
+    use crate::fiat_shamir_non_interactive::{prover::ProverStruct, verifier::VerifierStruct};
     use ark_bn254::Fq;
 
     fn bh_computation() -> Vec<Fq> {
@@ -96,10 +93,13 @@ mod test {
     #[test]
     fn test_verify_proof() {
         let mut verifier = VerifierStruct::new(bh_computation());
-        let check = verifier.check_proof();
-        assert_eq!(check, true);
 
-        let verify = verifier.verify_proof();
+        // call the get_proof function from the prover
+        let mut prover = ProverStruct::new(bh_computation());
+        let _ = prover.generate_proof();
+        let proof = prover.get_proof();
+
+        let verify = verifier.verify_proof(proof);
         assert_eq!(verify, true);
     }
 }
