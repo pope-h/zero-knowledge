@@ -25,6 +25,7 @@ impl<F: PrimeField> VerifierStruct<F> {
 
     fn check_proof(&mut self, proof: Proof<F>) {
         let mut transcript = Transcript::new();
+        transcript.append(&VerifierStruct::convert_to_bytes(self.bh_computation.computation.clone()));
 
         // get the claimed_sums and sum_polys from the proof
         let claimed_sums = proof.claimed_sums;

@@ -37,6 +37,7 @@ impl<F: PrimeField> ProverStruct<F> {
     pub fn generate_proof(&mut self) -> Vec<F> {
         let mut current_poly_ml = MultiLinearPoly::new(self.bh_computation.computation.clone());
         let mut transcript = Transcript::new();
+        transcript.append(&ProverStruct::convert_to_bytes(current_poly_ml.computation.clone()));
 
         while current_poly_ml.computation.len() > 1 {
             // println!("Starting computation is {:?}", current_poly_ml.computation);

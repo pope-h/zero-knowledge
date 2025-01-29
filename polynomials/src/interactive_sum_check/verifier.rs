@@ -45,6 +45,10 @@ impl<F: PrimeField> VerifierStruct<F> {
         true
     }
 
+    pub fn initial_transcript_push(&mut self) {
+        self.transcript.append(&VerifierStruct::convert_to_bytes(self.bh_computation.computation.clone()));
+    }
+
     pub fn generate_challenge(&mut self) -> F {
         let challenge_bytes = self.transcript.challenge();
         let challenge = VerifierStruct::convert_from_bytes(&challenge_bytes)[0];
@@ -110,6 +114,8 @@ fn test_verify_proof() {
     
     // Get the number of rounds needed (log2 of input size minus 1)
     let num_rounds = verifier.variable_count() - 1;
+
+    verifier.initial_transcript_push();
     
     for round in 0..num_rounds {
         let proof_array = prover.generate_proof();
