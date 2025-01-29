@@ -25,10 +25,6 @@ impl<F: PrimeField> ProverStruct<F> {
         ProverStruct { bh_computation: MultiLinearPoly::new(bh_computation), proof: Proof { claimed_sums: Vec::new(), sum_polys: Vec::new() }, final_state: FinalState { challenges: Vec::new(), final_univariate_poly: Vec::new() } }
     }
 
-    pub fn call_partial_evaluate(&mut self, eval_value: F, eval_value_position: usize) -> MultiLinearPoly<F> {
-        MultiLinearPoly::partial_evaluate(&mut self.bh_computation, eval_value, eval_value_position)
-    }
-
     pub fn convert_to_bytes(computation: Vec<F>) -> Vec<u8> {
         MultiLinearPoly::to_bytes(computation)
     }
