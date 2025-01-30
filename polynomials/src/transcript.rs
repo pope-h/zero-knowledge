@@ -11,11 +11,11 @@ impl Transcript {
         }
     }
 
-    pub fn append(&mut self, byte_array: &[u8]) {
+    pub fn absorb(&mut self, byte_array: &[u8]) {
         self.hasher.update(byte_array);
     }
 
-    pub fn challenge(&mut self) -> Vec<u8> {
+    pub fn squeeze(&mut self) -> Vec<u8> {
         // Clone the current hasher state to not affect future updates
         let hasher_clone = self.hasher.clone();
         let challenge_hash = hasher_clone.finalize().to_vec();
