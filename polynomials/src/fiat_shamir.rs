@@ -45,13 +45,13 @@ pub fn proof<F: PrimeField>(mut poly: MultiLinearPoly<F>, init_claimed_sum: F) -
 }
 
 pub fn verify<F: PrimeField>(mut proof: Proof<F>) -> bool {
-    let mut transcript = Transcript::new();
+    // // check that the polynomial is correct
+    // let verifier_claimed_sum = proof.init_poly.computation.iter().sum();
+    // if proof.init_claimed_sum != verifier_claimed_sum {
+    //     return false;
+    // }
 
-    // check that the polynomial is correct
-    let verifier_claimed_sum = proof.init_poly.computation.iter().sum();
-    if proof.init_claimed_sum != verifier_claimed_sum {
-        return false;
-    }
+    let mut transcript = Transcript::new();
     transcript.absorb(&MultiLinearPoly::to_bytes(proof.init_poly.computation.clone()));
 
     let mut claimed_sum: F = proof.init_claimed_sum;
