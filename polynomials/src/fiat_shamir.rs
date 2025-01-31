@@ -8,12 +8,14 @@ pub struct Proof<F: PrimeField> {
     pub sum_polys: Vec<MultiLinearPoly<F>>,
 }
 
-pub fn proof<F: PrimeField>(mut poly: MultiLinearPoly<F>) -> Proof<F> {
+
+// The prover doesn't compute the claimed_sum in the proof fn but does it externally and passes it in to the proof fn
+pub fn proof<F: PrimeField>(mut poly: MultiLinearPoly<F>, init_claimed_sum: F) -> Proof<F> {
     let init_poly = poly.computation.clone();
     let mut transcript = Transcript::new();
     transcript.absorb(&MultiLinearPoly::to_bytes(poly.computation.clone()));
 
-    let init_claimed_sum = poly.computation.iter().sum();
+    // let init_claimed_sum = poly.computation.iter().sum();
     let mut sum_polys = vec![];
 
     while poly.computation.len() > 1 {
@@ -102,7 +104,8 @@ mod tests {
             Fq::from(8),
             Fq::from(12),
         ])];
-        let proof = proof(poly[0].clone());
+        let init_claimed_sum = poly[0].computation.iter().sum();
+        let proof = proof(poly[0].clone(), init_claimed_sum);
         let init_claimed_sum = proof.init_claimed_sum;
 
         println!("init_claimed_sum is {:?}", init_claimed_sum);
@@ -129,7 +132,11 @@ mod tests {
             Fq::from(8),
             Fq::from(12),
         ])];
-        let proof = proof(poly[0].clone());
+        // let fake_claimed_sum = Fq::from(100);
+        // let fake_proof = proof(poly[0].clone(), fake_claimed_sum);
+
+        let init_claimed_sum = poly[0].computation.iter().sum();
+        let proof = proof(poly[0].clone(), init_claimed_sum);
         let result = verify(proof);
         println!("Result is {:?}", result);
         assert!(result);
