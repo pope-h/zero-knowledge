@@ -31,8 +31,9 @@ impl<F: PrimeField> Circuit<F> {
         self.layers.push(layer);
     }
 
-    pub fn evaluate(&self) -> Vec<F> {
+    pub fn evaluate(&self) -> Vec<Vec<F>> {
         let mut current_layer = self.inputs.clone();
+        let mut eval_layers = vec![];
 
         for layer in self.layers.iter() {
             let mut next_layer = vec![F::zero(); layer.gates.len()];
@@ -49,9 +50,10 @@ impl<F: PrimeField> Circuit<F> {
                 next_layer[gate.output] = result;
             }
 
+            eval_layers.push(next_layer.clone());
             current_layer = next_layer;
         }
-        current_layer
+        eval_layers
     }
     
 }
@@ -96,7 +98,7 @@ mod test {
         circuit.add_layer(layer);
 
         let result = circuit.evaluate();
-        assert_eq!(result, vec![Fq::from(3), Fq::from(2)]);
+        assert_eq!(result, vec![vec![Fq::from(3), Fq::from(2)]]);
     }
 
     #[test]
@@ -120,8 +122,11 @@ mod test {
         circuit.add_layer(layer_1);
         circuit.add_layer(layer_2);
 
+        let eval_layer_1 = vec![Fq::from(3), Fq::from(12)];
+        let eval_layer_2 = vec![Fq::from(15)];
+
         let result = circuit.evaluate();
-        assert_eq!(result, vec![Fq::from(15)]);
+        assert_eq!(result, vec![eval_layer_1, eval_layer_2]);
     }
 
     #[test]
@@ -148,7 +153,10 @@ mod test {
         circuit.add_layer(layer_1);
         circuit.add_layer(layer_2);
 
+        let eval_layer_1 = vec![Fq::from(3), Fq::from(12), Fq::from(30), Fq::from(56)];
+        let eval_layer_2 = vec![Fq::from(15), Fq::from(1680)];
+
         let result = circuit.evaluate();
-        assert_eq!(result, vec![Fq::from(15), Fq::from(1680)]);
+        assert_eq!(result, vec![eval_layer_1, eval_layer_2]);
     }
 }
