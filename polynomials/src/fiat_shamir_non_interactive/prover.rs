@@ -29,11 +29,6 @@ impl<F: PrimeField> ProverStruct<F> {
         MultiLinearPoly::to_bytes(computation)
     }
 
-    pub fn convert_from_bytes(bytes: &[u8]) -> Vec<F> {
-        let converted = MultiLinearPoly::from_bytes(bytes);
-        converted
-    }
-
     pub fn generate_proof(&mut self) -> Vec<F> {
         let mut current_poly_ml = MultiLinearPoly::new(self.bh_computation.computation.clone());
         let mut transcript = Transcript::new();
@@ -56,7 +51,7 @@ impl<F: PrimeField> ProverStruct<F> {
             transcript.append(&ProverStruct::convert_to_bytes(vec![claimed_sum]));
             transcript.append(&ProverStruct::convert_to_bytes(sum_poly.computation.clone()));
             let challenge_bytes = transcript.challenge();
-            let challenge = ProverStruct::convert_from_bytes(&challenge_bytes)[0];
+            let challenge = F::from_be_bytes_mod_order(&challenge_bytes);
             self.final_state.challenges.push(challenge);
 
             current_poly_ml = current_poly_ml.partial_evaluate(challenge, 0);

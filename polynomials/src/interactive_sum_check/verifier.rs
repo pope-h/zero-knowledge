@@ -22,10 +22,10 @@ impl<F: PrimeField> VerifierStruct<F> {
         MultiLinearPoly::to_bytes(computation)
     }
 
-    pub fn convert_from_bytes(bytes: &[u8]) -> Vec<F> {
-        let converted = MultiLinearPoly::from_bytes(bytes);
-        converted
-    }
+    // pub fn convert_from_bytes(bytes: &[u8]) -> Vec<F> {
+    //     let converted = F::from_be_bytes_mod_order(&challenge_bytes);
+    //     converted
+    // }
 
     pub fn variable_count(&self) -> u32 {
         self.bh_computation.computation.len().ilog2()
@@ -51,7 +51,7 @@ impl<F: PrimeField> VerifierStruct<F> {
 
     pub fn generate_challenge(&mut self) -> F {
         let challenge_bytes = self.transcript.challenge();
-        let challenge = VerifierStruct::convert_from_bytes(&challenge_bytes)[0];
+        let challenge = F::from_be_bytes_mod_order(&challenge_bytes);
 
         self.challenges.push(challenge);
 

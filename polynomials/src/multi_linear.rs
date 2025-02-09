@@ -10,11 +10,10 @@ pub struct MultiLinearPoly<F: PrimeField> {
 
 impl<F: PrimeField> MultiLinearPoly<F> {
     pub fn new(computation: Vec<F>) -> Self {
+        if !computation.len().is_power_of_two() {
+            panic!("The computation array must be in the power of 2");
+        }
         MultiLinearPoly { computation }
-    }
-
-    fn is_power_of_two(&self) -> bool {
-        self.computation.len().is_power_of_two()
     }
 
     fn variable_count(&self) -> u32 {
@@ -53,10 +52,6 @@ impl<F: PrimeField> MultiLinearPoly<F> {
     }
 
     pub fn evaluate(&mut self, eval_points: Vec<F>) -> Self {
-        if !self.is_power_of_two() {
-            panic!("The computation array must be in the power of 2");
-        }
-
         if eval_points.len() != self.variable_count() as usize {
             panic!("The number of eval points must be equal to the number of variables");
         }
@@ -74,20 +69,6 @@ impl<F: PrimeField> MultiLinearPoly<F> {
 
     pub fn to_bytes(computation: Vec<F>) -> Vec<u8> {
         computation.iter().flat_map(|x| F::into_bigint(*x).to_bytes_be()).collect()
-    }
-
-    pub fn from_bytes(bytes: &[u8]) -> Vec<F> {
-        let mut computation = Vec::new();
-        let mut i = 0;
-
-        while i < bytes.len() {
-            let mut bytes_array = [0u8; 32];
-            bytes_array.copy_from_slice(&bytes[i..i + 32]);
-            computation.push(F::from_be_bytes_mod_order(&bytes_array));
-            i += 32;
-        }
-
-        computation
     }
 }
 
@@ -255,13 +236,5 @@ mod test {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5
             ]
         );
-    }
-
-    #[test]
-    fn test_from_bytes() {
-        let bytes = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7];
-        let computation: Vec<Fq> = MultiLinearPoly::from_bytes(&bytes);
-
-        assert_eq!(computation, vec![Fq::from(5), Fq::from(7)]);
     }
 }

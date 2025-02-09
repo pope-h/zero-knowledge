@@ -32,7 +32,7 @@ pub fn proof<F: PrimeField>(mut poly: MultiLinearPoly<F>, init_claimed_sum: F) -
         transcript.absorb(&MultiLinearPoly::to_bytes(vec![claimed_sum]));
         transcript.absorb(&MultiLinearPoly::to_bytes(sum_poly.computation.clone()));
         let challenge_bytes = transcript.squeeze();
-        let challenge = MultiLinearPoly::from_bytes(&challenge_bytes)[0];
+        let challenge = F::from_be_bytes_mod_order(&challenge_bytes);
 
         poly = poly.partial_evaluate(challenge, 0);
     }
@@ -66,7 +66,7 @@ pub fn verify<F: PrimeField>(mut proof: Proof<F>) -> bool {
         transcript.absorb(&MultiLinearPoly::to_bytes(vec![claimed_sum]));
         transcript.absorb(&MultiLinearPoly::to_bytes(sum_poly.computation.clone()));
         let challenge_bytes = transcript.squeeze();
-        let challenge = MultiLinearPoly::from_bytes(&challenge_bytes)[0];
+        let challenge = F::from_be_bytes_mod_order(&challenge_bytes);
         challenges.push(challenge);
 
         // verifier uses the (y_1 + (y_2 - y_1) * challenge) to evaluate the polynomial

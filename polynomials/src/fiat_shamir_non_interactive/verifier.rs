@@ -18,11 +18,6 @@ impl<F: PrimeField> VerifierStruct<F> {
         MultiLinearPoly::to_bytes(computation)
     }
 
-    pub fn convert_from_bytes(bytes: &[u8]) -> Vec<F> {
-        let converted = MultiLinearPoly::from_bytes(bytes);
-        converted
-    }
-
     fn check_proof(&mut self, proof: Proof<F>) {
         let mut transcript = Transcript::new();
         transcript.append(&VerifierStruct::convert_to_bytes(self.bh_computation.computation.clone()));
@@ -41,7 +36,7 @@ impl<F: PrimeField> VerifierStruct<F> {
             transcript.append(&VerifierStruct::convert_to_bytes(vec![claimed_sums[i]]));
             transcript.append(&VerifierStruct::convert_to_bytes(sum_poly_i.computation.clone()));
             let challenge_bytes = transcript.challenge();
-            let challenge = VerifierStruct::convert_from_bytes(&challenge_bytes)[0];
+            let challenge = F::from_be_bytes_mod_order(&challenge_bytes);
             self.challenges.push(challenge);
 
             self.final_eval_poly = sum_poly_i.computation.clone();

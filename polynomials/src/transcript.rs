@@ -19,7 +19,7 @@ impl Transcript {
         // Clone the current hasher state to not affect future updates
         let hasher_clone = self.hasher.clone();
         let challenge_hash = hasher_clone.finalize().to_vec();
-        self.hasher.update(challenge_hash.clone());
+        self.hasher.update(&challenge_hash);
     
         challenge_hash
     }
