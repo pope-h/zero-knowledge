@@ -4,7 +4,7 @@ pub mod shamir_secret_sharing;
 pub mod fiat_shamir_non_interactive;
 pub mod interactive_sum_check;
 pub mod transcript;
-pub mod fiat_shamir;
+pub mod sum_check;
 pub mod gkr_protocol;
 
 use ark_ff::PrimeField;
