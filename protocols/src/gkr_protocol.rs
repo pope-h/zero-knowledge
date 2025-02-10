@@ -209,6 +209,37 @@ mod test {
     }
 
     #[test]
+    fn test_arithmetic_circuit() {
+        let inputs = vec![Fq::from(1), Fq::from(2), Fq::from(1), Fq::from(4)];
+        let mut circuit = Circuit::new(inputs);
+
+        let layer_1 = Layer {
+            gates: vec![
+                Gate { left: 0, right: 0, op: GateOp::Mul, output: 0 },
+                Gate { left: 1, right: 1, op: GateOp::Mul, output: 1 },
+                Gate { left: 1, right: 2, op: GateOp::Mul, output: 2 },
+                Gate { left: 3, right: 3, op: GateOp::Mul, output: 3 },
+            ]
+        };
+
+        let layer_2 = Layer {
+            gates: vec![
+                Gate { left: 0, right: 1, op: GateOp::Mul, output: 0 },
+                Gate { left: 2, right: 3, op: GateOp::Mul, output: 1 },
+            ]
+        };
+
+        circuit.add_layer(layer_1);
+        circuit.add_layer(layer_2);
+
+        let eval_layer_1 = vec![Fq::from(1), Fq::from(4), Fq::from(2), Fq::from(16)];
+        let eval_layer_2 = vec![Fq::from(4), Fq::from(32)];
+
+        let result = circuit.evaluate();
+        assert_eq!(result, vec![eval_layer_1, eval_layer_2]);
+    }
+
+    #[test]
     fn test_compute_mul_add() {
         let inputs = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5), Fq::from(6), Fq::from(7), Fq::from(8)];
         let mut circuit = Circuit::new(inputs);

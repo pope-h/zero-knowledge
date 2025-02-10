@@ -226,6 +226,17 @@ mod test {
     }
 
     #[test]
+    fn test_mul_add_evaluate() {
+        let computation = vec![Fq::from(0), Fq::from(1), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)];
+        let mut poly = MultiLinearPoly::new(computation);
+
+        let eval_points = vec![Fq::from(0), Fq::from(0), Fq::from(1)];
+        let result = poly.evaluate(eval_points);
+
+        assert_eq!(result.computation, vec![Fq::from(1)]);
+    }
+
+    #[test]
     fn test_to_bytes() {
         let computation = vec![Fq::from(5)];
         let bytes = MultiLinearPoly::to_bytes(computation);
