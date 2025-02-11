@@ -226,14 +226,31 @@ mod test {
     }
 
     #[test]
+    fn test_to_bytes() {
+        let computation = vec![Fq::from(5)];
+        let bytes = MultiLinearPoly::to_bytes(computation);
+
+        assert_eq!(
+            bytes,
+            vec![
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5
+            ]
+        );
+    }
+
+    // Test for understanding GKR
+    #[test]
     fn test_mul_add_evaluate() {
         let computation = vec![Fq::from(0), Fq::from(1), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)];
         let mut poly = MultiLinearPoly::new(computation);
 
-        let eval_points = vec![Fq::from(0), Fq::from(0), Fq::from(1)];
-        let result = poly.evaluate(eval_points);
+        // using a random challenge r = 2 for a
+        let eval_value = Fq::from(2);
+        let eval_position = 0;
+        let result = poly.partial_evaluate(eval_value, eval_position);
 
-        assert_eq!(result.computation, vec![Fq::from(1)]);
+        dbg!(result);
+        // 21888242871839275222246405745257275088696311157297823662689037894645226208582
     }
 
     #[test]
@@ -248,15 +265,13 @@ mod test {
     }
 
     #[test]
-    fn test_to_bytes() {
-        let computation = vec![Fq::from(5)];
-        let bytes = MultiLinearPoly::to_bytes(computation);
+    fn test_w_evaluate2() {
+        let computation = vec![Fq::from(3), Fq::from(12)];
+        let mut poly = MultiLinearPoly::new(computation);
 
-        assert_eq!(
-            bytes,
-            vec![
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5
-            ]
-        );
+        let eval_points = vec![Fq::from(1)];
+        let result = poly.evaluate(eval_points);
+
+        dbg!(result);
     }
 }

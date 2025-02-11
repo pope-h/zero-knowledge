@@ -103,6 +103,53 @@ impl<F: PrimeField> Circuit<F> {
 
         (add_vec, mul_vec)
     }
+
+    // returns tuple of w_i(b, c) for points b and c
+    // where bit_size is the number of bit of either b or c
+    pub fn eval_layer_i(poly: Vec<F>, bit_size: u32) -> (Vec<F>, Vec<F>) {
+        if poly.len().ilog2() != bit_size {
+            panic!("The polynomial must be of size 2^bit_size");
+        }
+
+        let n_bits = 2 * bit_size;
+        let total_combinations = 2usize.pow(n_bits);
+        let mut w_i_b = Vec::with_capacity(total_combinations);
+        let mut w_i_c = Vec::with_capacity(total_combinations);
+
+        // adding non-existent values of c e.g. 2b becomes 2b + 0c
+        for val in &poly {
+            for _i in 0..n_bits {
+                w_i_b.push(val.clone());
+            }
+        }
+
+        // adding non-existent values of b e.g. 2c becomes 0b + 2c
+        for _i in 0..n_bits {
+            for val in &poly {
+                w_i_c.push(val.clone());
+            }
+        }
+
+        (w_i_b, w_i_c)
+    }
+
+    // this function computes the addition or multiplication of w_i(b, c) for all points b and c
+    pub fn compute_w_poly(poly_a: Vec<F>, poly_b: Vec<F>, op: GateOp) -> Vec<F> {
+        if poly_a.len() != poly_b.len() {
+            panic!("The polynomials must be of the same size");
+        }
+
+        let mut result = vec![F::zero(); poly_a.len()];
+
+        for i in 0..poly_a.len() {
+            result[i] = match op {
+                GateOp::Add => poly_a[i] + poly_b[i],
+                GateOp::Mul => poly_a[i] * poly_b[i],
+            };
+        }
+
+        result
+    }
     
 }
 
@@ -273,5 +320,32 @@ mod test {
         let output = circuit.compute_layer_i_add_mul(0);
         dbg!(output);
         // assert_eq!(output, ([Fq::from(0), Fq::from(1), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)], [Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)]));
+    }
+
+    #[test]
+    fn test_eval_layer_i() {
+        let poly = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
+        let n_bits = 2;
+
+        let output = Circuit::eval_layer_i(poly, n_bits);
+        dbg!(output);
+    }
+
+    #[test]
+    fn test_compute_poly_add() {
+        let poly_a = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
+        let poly_b = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
+
+        let result = Circuit::compute_w_poly(poly_a, poly_b, GateOp::Add);
+        assert_eq!(result, vec![Fq::from(2), Fq::from(4), Fq::from(6), Fq::from(8)]);
+    }
+
+    #[test]
+    fn test_compute_poly_mul() {
+        let poly_a = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
+        let poly_b = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
+
+        let result = Circuit::compute_w_poly(poly_a, poly_b, GateOp::Mul);
+        assert_eq!(result, vec![Fq::from(1), Fq::from(4), Fq::from(9), Fq::from(16)]);
     }
 }
