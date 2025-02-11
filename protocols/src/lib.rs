@@ -6,6 +6,7 @@ pub mod interactive_sum_check;
 pub mod transcript;
 pub mod sum_check;
 pub mod gkr_protocol;
+pub mod gkr_sum_check;
 
 use ark_ff::PrimeField;
 use std::iter::{Product, Sum};
