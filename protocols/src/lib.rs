@@ -7,6 +7,7 @@ pub mod transcript;
 pub mod sum_check;
 pub mod gkr_protocol;
 pub mod gkr_sum_check;
+pub mod product_poly;
 
 use ark_ff::PrimeField;
 use std::iter::{Product, Sum};
@@ -306,5 +307,17 @@ mod test {
         let check_sum = check_1 + check_2;
 
         assert_eq!(check_3, check_sum);
+    }
+
+    #[test]
+    fn test_gkr_interpolate() {
+        let interpolate = UnivariatePoly::interpolate(
+            vec![Fq::from(0), Fq::from(1), Fq::from(2)],
+            vec![Fq::from(0), Fq::from(12), Fq::from(48)],
+        );
+        dbg!(&interpolate);
+
+        let check_1 = interpolate.evaluate(Fq::from(4));
+        dbg!(check_1);
     }
 }

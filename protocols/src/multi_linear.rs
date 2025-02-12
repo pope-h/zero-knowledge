@@ -241,7 +241,7 @@ mod test {
     // Test for understanding GKR
     #[test]
     fn test_mul_add_evaluate() {
-        let computation = vec![Fq::from(0), Fq::from(1), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)];
+        let computation = vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)];
         let mut poly = MultiLinearPoly::new(computation);
 
         // using a random challenge r = 2 for a
@@ -266,10 +266,10 @@ mod test {
 
     #[test]
     fn test_w_evaluate2() {
-        let computation = vec![Fq::from(3), Fq::from(12)];
+        let computation = vec![Fq::from(0), Fq::from(12)];
         let mut poly = MultiLinearPoly::new(computation);
 
-        let eval_points = vec![Fq::from(1)];
+        let eval_points = vec![Fq::from(2)];
         let result = poly.evaluate(eval_points);
 
         dbg!(result);
