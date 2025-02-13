@@ -1,5 +1,5 @@
-use ark_ff::PrimeField;
 use crate::{interactive_sum_check::transcript::Transcript, multi_linear::MultiLinearPoly};
+use ark_ff::PrimeField;
 
 pub struct VerifierStruct<F: PrimeField> {
     pub bh_computation: MultiLinearPoly<F>,
@@ -38,15 +38,20 @@ impl<F: PrimeField> VerifierStruct<F> {
             }
             self.final_eval_poly = sum_poly.computation.clone();
 
-            self.transcript.append(&VerifierStruct::convert_to_bytes(vec![claimed_sum]));
-            self.transcript.append(&VerifierStruct::convert_to_bytes(sum_poly.computation.clone()));
+            self.transcript
+                .append(&VerifierStruct::convert_to_bytes(vec![claimed_sum]));
+            self.transcript.append(&VerifierStruct::convert_to_bytes(
+                sum_poly.computation.clone(),
+            ));
         }
 
         true
     }
 
     pub fn initial_transcript_push(&mut self) {
-        self.transcript.append(&VerifierStruct::convert_to_bytes(self.bh_computation.computation.clone()));
+        self.transcript.append(&VerifierStruct::convert_to_bytes(
+            self.bh_computation.computation.clone(),
+        ));
     }
 
     pub fn generate_challenge(&mut self) -> F {
@@ -61,7 +66,8 @@ impl<F: PrimeField> VerifierStruct<F> {
     pub fn verify_proof(&mut self) -> bool {
         let mut final_eval: MultiLinearPoly<F> = MultiLinearPoly::new(self.final_eval_poly.clone());
 
-        let final_eval_at_challenge = final_eval.partial_evaluate(self.challenges[self.challenges.len() - 1], 0);
+        let final_eval_at_challenge =
+            final_eval.partial_evaluate(self.challenges[self.challenges.len() - 1], 0);
 
         let mut this_computation = self.bh_computation.clone();
         let final_output = this_computation.evaluate(self.challenges.clone());
@@ -71,17 +77,17 @@ impl<F: PrimeField> VerifierStruct<F> {
 }
 
 /*
-    STEPS FOR USING THE INTERACTIVE FIAT SHAMIR PROTOCOL
-    1 => Create a new instance of the VerifierStruct
-    2 => Call the generate_proof method on the ProverStruct instance
-    3 => Call the check_proof method and if it returns true, call the generate_challenge method
-    4 => Call the next_poly method on the ProverStruct instance
-    5 => Repeat steps 2 to 4 for (variable_count.len() - 1) times
-    6 => Repeat steps 2 & 3 (i.e. ensuring we don't send the last_challenge to the prover)
-    7 => Finally call the verify_proof method on the VerifierStruct instance
- */
+   STEPS FOR USING THE INTERACTIVE FIAT SHAMIR PROTOCOL
+   1 => Create a new instance of the VerifierStruct
+   2 => Call the generate_proof method on the ProverStruct instance
+   3 => Call the check_proof method and if it returns true, call the generate_challenge method
+   4 => Call the next_poly method on the ProverStruct instance
+   5 => Repeat steps 2 to 4 for (variable_count.len() - 1) times
+   6 => Repeat steps 2 & 3 (i.e. ensuring we don't send the last_challenge to the prover)
+   7 => Finally call the verify_proof method on the VerifierStruct instance
+*/
 
- #[cfg(test)]
+#[cfg(test)]
 mod test {
     use crate::interactive_sum_check::prover::ProverStruct;
 
@@ -89,7 +95,8 @@ mod test {
     use ark_bn254::Fq;
 
     fn bh_computation() -> Vec<Fq> {
-        vec![Fq::from(0),
+        vec![
+            Fq::from(0),
             Fq::from(0),
             Fq::from(0),
             Fq::from(0),
@@ -104,42 +111,43 @@ mod test {
             Fq::from(5),
             Fq::from(9),
             Fq::from(8),
-            Fq::from(12)]
+            Fq::from(12),
+        ]
     }
 
     #[test]
-fn test_verify_proof() {
-    let mut verifier = VerifierStruct::new(bh_computation());
-    let mut prover = ProverStruct::new(bh_computation());
-    
-    // Get the number of rounds needed (log2 of input size minus 1)
-    let num_rounds = verifier.variable_count() - 1;
+    fn test_verify_proof() {
+        let mut verifier = VerifierStruct::new(bh_computation());
+        let mut prover = ProverStruct::new(bh_computation());
 
-    verifier.initial_transcript_push();
-    
-    for round in 0..num_rounds {
-        let proof_array = prover.generate_proof();
-        let verify = verifier.check_proof(proof_array);
-        assert!(verify, "Proof verification failed at round {}", round);
+        // Get the number of rounds needed (log2 of input size minus 1)
+        let num_rounds = verifier.variable_count() - 1;
 
-        if verify {
-            let challenge = verifier.generate_challenge();
-            prover.next_poly(challenge);
+        verifier.initial_transcript_push();
+
+        for round in 0..num_rounds {
+            let proof_array = prover.generate_proof();
+            let verify = verifier.check_proof(proof_array);
+            assert!(verify, "Proof verification failed at round {}", round);
+
+            if verify {
+                let challenge = verifier.generate_challenge();
+                prover.next_poly(challenge);
+            }
         }
-    }
 
-    // Compute a final round that doesn't send challenge to the prover
-    let final_proof = prover.generate_proof();
-    if verifier.check_proof(final_proof) {
-        verifier.generate_challenge();
-        
-        let final_eval = verifier.verify_proof();
-        assert!(final_eval, "Final verification failed");
+        // Compute a final round that doesn't send challenge to the prover
+        let final_proof = prover.generate_proof();
+        if verifier.check_proof(final_proof) {
+            verifier.generate_challenge();
 
-        // let final_eval_falsified = false;
-        // assert!(final_eval_falsified, "Final verification failed");
-    }
+            let final_eval = verifier.verify_proof();
+            assert!(final_eval, "Final verification failed");
 
-    assert!(verifier.verify_proof(), "Final verification failed");
+            // let final_eval_falsified = false;
+            // assert!(final_eval_falsified, "Final verification failed");
+        }
+
+        assert!(verifier.verify_proof(), "Final verification failed");
     }
 }

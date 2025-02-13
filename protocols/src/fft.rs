@@ -57,10 +57,10 @@ impl<F: FftField> FastFourierTransform<F> {
         let mut y = vec![F::zero(); n as usize];
 
         for i in 0..(n / 2) {
-            y[i as usize] = y_even.coefficients[i as usize]
-                + (w.pow(&[i]) * y_odd.coefficients[i as usize]);
-            y[(i + n / 2) as usize] = y_even.coefficients[i as usize]
-                - (w.pow(&[i]) * y_odd.coefficients[i as usize]);
+            y[i as usize] =
+                y_even.coefficients[i as usize] + (w.pow(&[i]) * y_odd.coefficients[i as usize]);
+            y[(i + n / 2) as usize] =
+                y_even.coefficients[i as usize] - (w.pow(&[i]) * y_odd.coefficients[i as usize]);
         }
 
         FastFourierTransform { coefficients: y }
@@ -104,7 +104,9 @@ impl<F: FftField> FastFourierTransform<F> {
         let y_divided: Vec<F> = y.iter().map(|elem| *elem / F::from(n)).collect();
         println!("{:?}", y);
 
-        FastFourierTransform { coefficients: y_divided }
+        FastFourierTransform {
+            coefficients: y_divided,
+        }
     }
 }
 

@@ -1,13 +1,13 @@
 use sha3::{Digest, Keccak256};
 
 pub struct Transcript {
-    hasher: Keccak256,  // Keep the hasher as part of the state
+    hasher: Keccak256, // Keep the hasher as part of the state
 }
 
 impl Transcript {
     pub fn new() -> Self {
         Transcript {
-            hasher: Keccak256::new()
+            hasher: Keccak256::new(),
         }
     }
 
@@ -20,7 +20,7 @@ impl Transcript {
         let hasher_clone = self.hasher.clone();
         let challenge_hash = hasher_clone.finalize().to_vec();
         self.hasher.update(challenge_hash.clone());
-    
+
         challenge_hash
     }
 }

@@ -1,5 +1,5 @@
+use crate::{fiat_shamir_non_interactive::transcript::Transcript, multi_linear::MultiLinearPoly};
 use ark_ff::PrimeField;
-use crate::{multi_linear::MultiLinearPoly, fiat_shamir_non_interactive::transcript::Transcript};
 
 use super::prover::Proof;
 
@@ -11,7 +11,11 @@ pub struct VerifierStruct<F: PrimeField> {
 
 impl<F: PrimeField> VerifierStruct<F> {
     pub fn new(bh_computation: Vec<F>) -> Self {
-        VerifierStruct { bh_computation: MultiLinearPoly::new(bh_computation), challenges: Vec::new(), final_eval_poly: Vec::with_capacity(1) }
+        VerifierStruct {
+            bh_computation: MultiLinearPoly::new(bh_computation),
+            challenges: Vec::new(),
+            final_eval_poly: Vec::with_capacity(1),
+        }
     }
 
     pub fn convert_to_bytes(computation: Vec<F>) -> Vec<u8> {
@@ -20,7 +24,9 @@ impl<F: PrimeField> VerifierStruct<F> {
 
     fn check_proof(&mut self, proof: Proof<F>) {
         let mut transcript = Transcript::new();
-        transcript.append(&VerifierStruct::convert_to_bytes(self.bh_computation.computation.clone()));
+        transcript.append(&VerifierStruct::convert_to_bytes(
+            self.bh_computation.computation.clone(),
+        ));
 
         // get the claimed_sums and sum_polys from the proof
         let claimed_sums = proof.claimed_sums;
@@ -34,7 +40,9 @@ impl<F: PrimeField> VerifierStruct<F> {
             }
 
             transcript.append(&VerifierStruct::convert_to_bytes(vec![claimed_sums[i]]));
-            transcript.append(&VerifierStruct::convert_to_bytes(sum_poly_i.computation.clone()));
+            transcript.append(&VerifierStruct::convert_to_bytes(
+                sum_poly_i.computation.clone(),
+            ));
             let challenge_bytes = transcript.challenge();
             let challenge = F::from_be_bytes_mod_order(&challenge_bytes);
             self.challenges.push(challenge);
@@ -45,19 +53,24 @@ impl<F: PrimeField> VerifierStruct<F> {
 
     // perform a final check to see if the final_eval_poly is equal to the final_eval_poly from the prover
     /*
-        Note that for the final evaluation, the verifier will not send the last challenge point to the prover 
-        He would instead use the last challenge to evaluate the final polynomial    
-     */
+       Note that for the final evaluation, the verifier will not send the last challenge point to the prover
+       He would instead use the last challenge to evaluate the final polynomial
+    */
     pub fn verify_proof(&mut self, proof: Proof<F>) -> bool {
         self.check_proof(proof);
 
         // convert the final_eval_poly to a univariate polynomial and evaluate it at the first challenge
         let mut final_eval: MultiLinearPoly<F> = MultiLinearPoly::new(self.final_eval_poly.clone());
-        let final_eval_at_challenge = final_eval.partial_evaluate(self.challenges[self.challenges.len() - 1], 0);
+        let final_eval_at_challenge =
+            final_eval.partial_evaluate(self.challenges[self.challenges.len() - 1], 0);
 
         let mut this_computation = self.bh_computation.clone();
-        let full_evaluation = MultiLinearPoly::new(vec![this_computation.evaluate(self.challenges.clone()).computation[0]]);
-    
+        let full_evaluation = MultiLinearPoly::new(vec![
+            this_computation
+                .evaluate(self.challenges.clone())
+                .computation[0],
+        ]);
+
         final_eval_at_challenge == full_evaluation
     }
 }
@@ -68,7 +81,8 @@ mod test {
     use ark_bn254::Fq;
 
     fn bh_computation() -> Vec<Fq> {
-        vec![Fq::from(0),
+        vec![
+            Fq::from(0),
             Fq::from(0),
             Fq::from(0),
             Fq::from(0),
@@ -83,7 +97,8 @@ mod test {
             Fq::from(5),
             Fq::from(9),
             Fq::from(8),
-            Fq::from(12)]
+            Fq::from(12),
+        ]
     }
 
     #[test]

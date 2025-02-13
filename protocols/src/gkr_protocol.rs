@@ -24,7 +24,10 @@ pub struct Circuit<F: PrimeField> {
 
 impl<F: PrimeField> Circuit<F> {
     pub fn new(inputs: Vec<F>) -> Self {
-        Circuit { layers: Vec::new(), inputs }
+        Circuit {
+            layers: Vec::new(),
+            inputs,
+        }
     }
 
     pub fn add_layer(&mut self, layer: Layer) {
@@ -56,7 +59,7 @@ impl<F: PrimeField> Circuit<F> {
         eval_layers
     }
 
-    pub fn compute_layer_i_add_mul(&self, layer_i: usize) -> (Vec<F>, Vec<F>) {
+    pub fn layer_i_add_mul(&self, layer_i: usize) -> (Vec<F>, Vec<F>) {
         let layer = &self.layers[self.layers.len() - layer_i - 1];
 
         // my discovery is that for a 2-gate with 1-bit each at output and 2-bits each at input
@@ -80,7 +83,7 @@ impl<F: PrimeField> Circuit<F> {
             output_bits = gate_count.ilog2();
         }
 
-        let n_bits = (2 * input_bits) + output_bits;    // (left_bit + right_bit )+ output_bit
+        let n_bits = (2 * input_bits) + output_bits; // (left_bit + right_bit )+ output_bit
         let total_combinations = 2usize.pow(n_bits);
         let mut add_vec = vec![F::zero(); total_combinations];
         let mut mul_vec = vec![F::zero(); total_combinations];
@@ -91,8 +94,16 @@ impl<F: PrimeField> Circuit<F> {
 
         for gate in &layer.gates {
             let index = match gate.op {
-                GateOp::Mul => (gate.output << output_start_index) + (gate.left << left_start_index) + (gate.right << right_start_index),
-                GateOp::Add => (gate.output << output_start_index) + (gate.left << left_start_index) + (gate.right << right_start_index),
+                GateOp::Mul => {
+                    (gate.output << output_start_index)
+                        + (gate.left << left_start_index)
+                        + (gate.right << right_start_index)
+                }
+                GateOp::Add => {
+                    (gate.output << output_start_index)
+                        + (gate.left << left_start_index)
+                        + (gate.right << right_start_index)
+                }
             };
 
             match gate.op {
@@ -134,7 +145,7 @@ impl<F: PrimeField> Circuit<F> {
     }
 
     // this function computes the addition or multiplication of w_i(b, c) for all points b and c
-    pub fn compute_w_poly(poly_a: Vec<F>, poly_b: Vec<F>, op: GateOp) -> Vec<F> {
+    pub fn element_wise_op(poly_a: Vec<F>, poly_b: Vec<F>, op: GateOp) -> Vec<F> {
         if poly_a.len() != poly_b.len() {
             panic!("The polynomials must be of the same size");
         }
@@ -150,7 +161,6 @@ impl<F: PrimeField> Circuit<F> {
 
         result
     }
-    
 }
 
 #[cfg(test)]
@@ -160,7 +170,12 @@ mod test {
 
     #[test]
     fn test_gate_creation() {
-        let gate = Gate { left: 0, right: 1, op: GateOp::Add, output: 0 };
+        let gate = Gate {
+            left: 0,
+            right: 1,
+            op: GateOp::Add,
+            output: 0,
+        };
         assert_eq!(gate.left, 0);
         assert_eq!(gate.right, 1);
         assert_eq!(gate.op, GateOp::Add);
@@ -169,9 +184,21 @@ mod test {
 
     #[test]
     fn test_layer_creation() {
-        let gate_1 = Gate { left: 0, right: 1, op: GateOp::Add, output: 0 };
-        let gate_2 = Gate { left: 0, right: 1, op: GateOp::Mul, output: 1 };
-        let layer = Layer { gates: vec![gate_1, gate_2] };
+        let gate_1 = Gate {
+            left: 0,
+            right: 1,
+            op: GateOp::Add,
+            output: 0,
+        };
+        let gate_2 = Gate {
+            left: 0,
+            right: 1,
+            op: GateOp::Mul,
+            output: 1,
+        };
+        let layer = Layer {
+            gates: vec![gate_1, gate_2],
+        };
 
         assert_eq!(layer.gates.len(), 2);
         assert_eq!(layer.gates[0].op, GateOp::Add);
@@ -185,9 +212,19 @@ mod test {
 
         let layer = Layer {
             gates: vec![
-                Gate { left: 0, right: 1, op: GateOp::Add, output: 0 },
-                Gate { left: 0, right: 1, op: GateOp::Mul, output: 1 },
-            ]
+                Gate {
+                    left: 0,
+                    right: 1,
+                    op: GateOp::Add,
+                    output: 0,
+                },
+                Gate {
+                    left: 0,
+                    right: 1,
+                    op: GateOp::Mul,
+                    output: 1,
+                },
+            ],
         };
 
         circuit.add_layer(layer);
@@ -203,15 +240,28 @@ mod test {
 
         let layer_1 = Layer {
             gates: vec![
-                Gate { left: 0, right: 1, op: GateOp::Add, output: 0 },
-                Gate { left: 2, right: 3, op: GateOp::Mul, output: 1 },
-            ]
+                Gate {
+                    left: 0,
+                    right: 1,
+                    op: GateOp::Add,
+                    output: 0,
+                },
+                Gate {
+                    left: 2,
+                    right: 3,
+                    op: GateOp::Mul,
+                    output: 1,
+                },
+            ],
         };
 
         let layer_2 = Layer {
-            gates: vec![
-                Gate { left: 0, right: 1, op: GateOp::Add, output: 0 },
-            ]
+            gates: vec![Gate {
+                left: 0,
+                right: 1,
+                op: GateOp::Add,
+                output: 0,
+            }],
         };
 
         circuit.add_layer(layer_1);
@@ -226,23 +276,62 @@ mod test {
 
     #[test]
     fn test_two_evaluate_returned() {
-        let inputs = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5), Fq::from(6), Fq::from(7), Fq::from(8)];
+        let inputs = vec![
+            Fq::from(1),
+            Fq::from(2),
+            Fq::from(3),
+            Fq::from(4),
+            Fq::from(5),
+            Fq::from(6),
+            Fq::from(7),
+            Fq::from(8),
+        ];
         let mut circuit = Circuit::new(inputs);
 
         let layer_1 = Layer {
             gates: vec![
-                Gate { left: 0, right: 1, op: GateOp::Add, output: 0 },
-                Gate { left: 2, right: 3, op: GateOp::Mul, output: 1 },
-                Gate { left: 4, right: 5, op: GateOp::Mul, output: 2 },
-                Gate { left: 6, right: 7, op: GateOp::Mul, output: 3 },
-            ]
+                Gate {
+                    left: 0,
+                    right: 1,
+                    op: GateOp::Add,
+                    output: 0,
+                },
+                Gate {
+                    left: 2,
+                    right: 3,
+                    op: GateOp::Mul,
+                    output: 1,
+                },
+                Gate {
+                    left: 4,
+                    right: 5,
+                    op: GateOp::Mul,
+                    output: 2,
+                },
+                Gate {
+                    left: 6,
+                    right: 7,
+                    op: GateOp::Mul,
+                    output: 3,
+                },
+            ],
         };
 
         let layer_2 = Layer {
             gates: vec![
-                Gate { left: 0, right: 1, op: GateOp::Add, output: 0 },
-                Gate { left: 2, right: 3, op: GateOp::Mul, output: 1 },
-            ]
+                Gate {
+                    left: 0,
+                    right: 1,
+                    op: GateOp::Add,
+                    output: 0,
+                },
+                Gate {
+                    left: 2,
+                    right: 3,
+                    op: GateOp::Mul,
+                    output: 1,
+                },
+            ],
         };
 
         circuit.add_layer(layer_1);
@@ -262,18 +351,48 @@ mod test {
 
         let layer_1 = Layer {
             gates: vec![
-                Gate { left: 0, right: 0, op: GateOp::Mul, output: 0 },
-                Gate { left: 1, right: 1, op: GateOp::Mul, output: 1 },
-                Gate { left: 1, right: 2, op: GateOp::Mul, output: 2 },
-                Gate { left: 3, right: 3, op: GateOp::Mul, output: 3 },
-            ]
+                Gate {
+                    left: 0,
+                    right: 0,
+                    op: GateOp::Mul,
+                    output: 0,
+                },
+                Gate {
+                    left: 1,
+                    right: 1,
+                    op: GateOp::Mul,
+                    output: 1,
+                },
+                Gate {
+                    left: 1,
+                    right: 2,
+                    op: GateOp::Mul,
+                    output: 2,
+                },
+                Gate {
+                    left: 3,
+                    right: 3,
+                    op: GateOp::Mul,
+                    output: 3,
+                },
+            ],
         };
 
         let layer_2 = Layer {
             gates: vec![
-                Gate { left: 0, right: 1, op: GateOp::Mul, output: 0 },
-                Gate { left: 2, right: 3, op: GateOp::Mul, output: 1 },
-            ]
+                Gate {
+                    left: 0,
+                    right: 1,
+                    op: GateOp::Mul,
+                    output: 0,
+                },
+                Gate {
+                    left: 2,
+                    right: 3,
+                    op: GateOp::Mul,
+                    output: 1,
+                },
+            ],
         };
 
         circuit.add_layer(layer_1);
@@ -288,36 +407,78 @@ mod test {
 
     #[test]
     fn test_compute_mul_add() {
-        let inputs = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5), Fq::from(6), Fq::from(7), Fq::from(8)];
+        let inputs = vec![
+            Fq::from(1),
+            Fq::from(2),
+            Fq::from(3),
+            Fq::from(4),
+            Fq::from(5),
+            Fq::from(6),
+            Fq::from(7),
+            Fq::from(8),
+        ];
         let mut circuit = Circuit::new(inputs);
 
         let layer_1 = Layer {
             gates: vec![
-                Gate { left: 0, right: 1, op: GateOp::Add, output: 0 },
-                Gate { left: 2, right: 3, op: GateOp::Mul, output: 1 },
-                Gate { left: 4, right: 5, op: GateOp::Mul, output: 2 },
-                Gate { left: 6, right: 7, op: GateOp::Mul, output: 3 },
-            ]
+                Gate {
+                    left: 0,
+                    right: 1,
+                    op: GateOp::Add,
+                    output: 0,
+                },
+                Gate {
+                    left: 2,
+                    right: 3,
+                    op: GateOp::Mul,
+                    output: 1,
+                },
+                Gate {
+                    left: 4,
+                    right: 5,
+                    op: GateOp::Mul,
+                    output: 2,
+                },
+                Gate {
+                    left: 6,
+                    right: 7,
+                    op: GateOp::Mul,
+                    output: 3,
+                },
+            ],
         };
 
         let layer_2 = Layer {
             gates: vec![
-                Gate { left: 0, right: 1, op: GateOp::Add, output: 0 },
-                Gate { left: 2, right: 3, op: GateOp::Mul, output: 1 },
-            ]
+                Gate {
+                    left: 0,
+                    right: 1,
+                    op: GateOp::Add,
+                    output: 0,
+                },
+                Gate {
+                    left: 2,
+                    right: 3,
+                    op: GateOp::Mul,
+                    output: 1,
+                },
+            ],
         };
 
         let layer_3 = Layer {
-            gates: vec![
-                Gate { left: 0, right: 1, op: GateOp::Add, output:0 }
-            ]
+            gates: vec![Gate {
+                left: 0,
+                right: 1,
+                op: GateOp::Add,
+                output: 0,
+            }],
         };
 
         circuit.add_layer(layer_1);
         circuit.add_layer(layer_2);
         circuit.add_layer(layer_3);
 
-        let output = circuit.compute_layer_i_add_mul(0);
+        let output = circuit.layer_i_add_mul(0);
         dbg!(output);
         // assert_eq!(output, ([Fq::from(0), Fq::from(1), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)], [Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)]));
     }
@@ -336,8 +497,11 @@ mod test {
         let poly_a = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
         let poly_b = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
 
-        let result = Circuit::compute_w_poly(poly_a, poly_b, GateOp::Add);
-        assert_eq!(result, vec![Fq::from(2), Fq::from(4), Fq::from(6), Fq::from(8)]);
+        let result = Circuit::element_wise_op(poly_a, poly_b, GateOp::Add);
+        assert_eq!(
+            result,
+            vec![Fq::from(2), Fq::from(4), Fq::from(6), Fq::from(8)]
+        );
     }
 
     #[test]
@@ -345,7 +509,10 @@ mod test {
         let poly_a = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
         let poly_b = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
 
-        let result = Circuit::compute_w_poly(poly_a, poly_b, GateOp::Mul);
-        assert_eq!(result, vec![Fq::from(1), Fq::from(4), Fq::from(9), Fq::from(16)]);
+        let result = Circuit::element_wise_op(poly_a, poly_b, GateOp::Mul);
+        assert_eq!(
+            result,
+            vec![Fq::from(1), Fq::from(4), Fq::from(9), Fq::from(16)]
+        );
     }
 }

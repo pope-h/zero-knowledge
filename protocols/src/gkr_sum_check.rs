@@ -1,5 +1,5 @@
-use ark_ff::PrimeField;
 use crate::{multi_linear::MultiLinearPoly, transcript::Transcript};
+use ark_ff::PrimeField;
 
 #[derive(Debug, Clone)]
 pub struct Proof<F: PrimeField> {
@@ -8,9 +8,11 @@ pub struct Proof<F: PrimeField> {
     pub sum_polys: Vec<MultiLinearPoly<F>>,
 }
 
-
 // The prover doesn't compute the claimed_sum in the proof fn but does it externally and passes it in to the proof fn
-pub fn proof<F: PrimeField>(mut poly_array: Vec<MultiLinearPoly<F>>, init_claimed_sum: F) -> Proof<F> {
+pub fn proof<F: PrimeField>(
+    mut poly_array: Vec<MultiLinearPoly<F>>,
+    init_claimed_sum: F,
+) -> Proof<F> {
     if poly_array.len() != 2 {
         panic!("The number of polynomials must be 2");
     }
@@ -22,8 +24,12 @@ pub fn proof<F: PrimeField>(mut poly_array: Vec<MultiLinearPoly<F>>, init_claime
     let init_poly_a = poly_array[0].computation.clone();
     let init_poly_b = poly_array[1].computation.clone();
     let mut transcript = Transcript::new();
-    transcript.absorb(&MultiLinearPoly::to_bytes(poly_array[0].computation.clone()));
-    transcript.absorb(&MultiLinearPoly::to_bytes(poly_array[1].computation.clone()));
+    transcript.absorb(&MultiLinearPoly::to_bytes(
+        poly_array[0].computation.clone(),
+    ));
+    transcript.absorb(&MultiLinearPoly::to_bytes(
+        poly_array[1].computation.clone(),
+    ));
 
     // let init_claimed_sum = poly.computation.iter().sum();
     let mut sum_polys = vec![];
@@ -52,7 +58,9 @@ pub fn proof<F: PrimeField>(mut poly_array: Vec<MultiLinearPoly<F>>, init_claime
 
         let sum_poly = MultiLinearPoly::new(vec![left_sum, right_sum]);
 
-        sum_polys.push(MultiLinearPoly { computation: sum_poly.computation.clone() });
+        sum_polys.push(MultiLinearPoly {
+            computation: sum_poly.computation.clone(),
+        });
 
         transcript.absorb(&MultiLinearPoly::to_bytes(vec![claimed_sum]));
         transcript.absorb(&MultiLinearPoly::to_bytes(sum_poly.computation.clone()));
@@ -64,16 +72,27 @@ pub fn proof<F: PrimeField>(mut poly_array: Vec<MultiLinearPoly<F>>, init_claime
     }
 
     Proof {
-        init_poly_array: vec![MultiLinearPoly { computation: init_poly_a }, MultiLinearPoly { computation: init_poly_b }],
+        init_poly_array: vec![
+            MultiLinearPoly {
+                computation: init_poly_a,
+            },
+            MultiLinearPoly {
+                computation: init_poly_b,
+            },
+        ],
         init_claimed_sum,
-        sum_polys
+        sum_polys,
     }
 }
 
 pub fn verify<F: PrimeField>(mut proof: Proof<F>) -> bool {
     let mut transcript = Transcript::new();
-    transcript.absorb(&MultiLinearPoly::to_bytes(proof.init_poly_array[0].computation.clone()));
-    transcript.absorb(&MultiLinearPoly::to_bytes(proof.init_poly_array[1].computation.clone()));
+    transcript.absorb(&MultiLinearPoly::to_bytes(
+        proof.init_poly_array[0].computation.clone(),
+    ));
+    transcript.absorb(&MultiLinearPoly::to_bytes(
+        proof.init_poly_array[1].computation.clone(),
+    ));
 
     let mut claimed_sum: F = proof.init_claimed_sum;
     let mut challenges: Vec<F> = vec![];
@@ -83,7 +102,7 @@ pub fn verify<F: PrimeField>(mut proof: Proof<F>) -> bool {
         if claimed_sum != poly_sum {
             return false;
         }
-            
+
         transcript.absorb(&MultiLinearPoly::to_bytes(vec![claimed_sum]));
         transcript.absorb(&MultiLinearPoly::to_bytes(sum_poly.computation.clone()));
         let challenge_bytes = transcript.squeeze();
@@ -91,7 +110,8 @@ pub fn verify<F: PrimeField>(mut proof: Proof<F>) -> bool {
         challenges.push(challenge);
 
         // verifier uses the (y_1 + (y_2 - y_1) * challenge) to evaluate the polynomial
-        claimed_sum = sum_poly.computation[0] + ((sum_poly.computation[1] - sum_poly.computation[0]) * challenge);
+        claimed_sum = sum_poly.computation[0]
+            + ((sum_poly.computation[1] - sum_poly.computation[0]) * challenge);
     }
 
     let eval_a = proof.init_poly_array[0].evaluate(challenges.clone());

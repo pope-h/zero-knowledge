@@ -1,5 +1,5 @@
-use ark_ff::PrimeField;
 use crate::{multi_linear::MultiLinearPoly, transcript::Transcript};
+use ark_ff::PrimeField;
 
 #[derive(Debug, Clone)]
 pub struct Proof<F: PrimeField> {
@@ -7,7 +7,6 @@ pub struct Proof<F: PrimeField> {
     pub init_claimed_sum: F,
     pub sum_polys: Vec<MultiLinearPoly<F>>,
 }
-
 
 // The prover doesn't compute the claimed_sum in the proof fn but does it externally and passes it in to the proof fn
 pub fn proof<F: PrimeField>(mut poly: MultiLinearPoly<F>, init_claimed_sum: F) -> Proof<F> {
@@ -27,7 +26,9 @@ pub fn proof<F: PrimeField>(mut poly: MultiLinearPoly<F>, init_claimed_sum: F) -
         let claimed_sum: F = poly.computation.iter().sum();
         let sum_poly = MultiLinearPoly::new(vec![left_sum, right_sum]);
         // println!("Sum poly is {:?}", sum_poly);
-        sum_polys.push(MultiLinearPoly { computation: sum_poly.computation.clone() });
+        sum_polys.push(MultiLinearPoly {
+            computation: sum_poly.computation.clone(),
+        });
 
         transcript.absorb(&MultiLinearPoly::to_bytes(vec![claimed_sum]));
         transcript.absorb(&MultiLinearPoly::to_bytes(sum_poly.computation.clone()));
@@ -38,9 +39,11 @@ pub fn proof<F: PrimeField>(mut poly: MultiLinearPoly<F>, init_claimed_sum: F) -
     }
 
     Proof {
-        init_poly: MultiLinearPoly { computation: init_poly },
+        init_poly: MultiLinearPoly {
+            computation: init_poly,
+        },
         init_claimed_sum,
-        sum_polys
+        sum_polys,
     }
 }
 
@@ -52,7 +55,9 @@ pub fn verify<F: PrimeField>(mut proof: Proof<F>) -> bool {
     // }
 
     let mut transcript = Transcript::new();
-    transcript.absorb(&MultiLinearPoly::to_bytes(proof.init_poly.computation.clone()));
+    transcript.absorb(&MultiLinearPoly::to_bytes(
+        proof.init_poly.computation.clone(),
+    ));
 
     let mut claimed_sum: F = proof.init_claimed_sum;
     let mut challenges: Vec<F> = vec![];
@@ -62,7 +67,7 @@ pub fn verify<F: PrimeField>(mut proof: Proof<F>) -> bool {
         if claimed_sum != poly_sum {
             return false;
         }
-            
+
         transcript.absorb(&MultiLinearPoly::to_bytes(vec![claimed_sum]));
         transcript.absorb(&MultiLinearPoly::to_bytes(sum_poly.computation.clone()));
         let challenge_bytes = transcript.squeeze();
@@ -70,7 +75,8 @@ pub fn verify<F: PrimeField>(mut proof: Proof<F>) -> bool {
         challenges.push(challenge);
 
         // verifier uses the (y_1 + (y_2 - y_1) * challenge) to evaluate the polynomial
-        claimed_sum = sum_poly.computation[0] + ((sum_poly.computation[1] - sum_poly.computation[0]) * challenge);
+        claimed_sum = sum_poly.computation[0]
+            + ((sum_poly.computation[1] - sum_poly.computation[0]) * challenge);
     }
 
     let final_eval = proof.init_poly.evaluate(challenges);
@@ -81,8 +87,8 @@ pub fn verify<F: PrimeField>(mut proof: Proof<F>) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_bn254::Fq;
     use crate::multi_linear::MultiLinearPoly;
+    use ark_bn254::Fq;
 
     #[test]
     fn test_proof() {

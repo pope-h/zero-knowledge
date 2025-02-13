@@ -68,7 +68,10 @@ impl<F: PrimeField> MultiLinearPoly<F> {
     }
 
     pub fn to_bytes(computation: Vec<F>) -> Vec<u8> {
-        computation.iter().flat_map(|x| F::into_bigint(*x).to_bytes_be()).collect()
+        computation
+            .iter()
+            .flat_map(|x| F::into_bigint(*x).to_bytes_be())
+            .collect()
     }
 }
 
@@ -99,14 +102,26 @@ mod test {
     #[test]
     fn test_partial_evaluate_at_last_index() {
         // 00030025 0 9 0 11 at c = 3
-        let computation = vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3), Fq::from(0), Fq::from(0), Fq::from(2), Fq::from(5)];
+        let computation = vec![
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(3),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(2),
+            Fq::from(5),
+        ];
         let mut multi_linear_poly = MultiLinearPoly::new(computation);
 
         let eval_value = Fq::from(3);
         let eval_value_position = 2;
         let result = multi_linear_poly.partial_evaluate(eval_value, eval_value_position);
 
-        assert_eq!(result.computation, vec![Fq::from(0), Fq::from(9), Fq::from(0), Fq::from(11)]);
+        assert_eq!(
+            result.computation,
+            vec![Fq::from(0), Fq::from(9), Fq::from(0), Fq::from(11)]
+        );
     }
 
     #[test]
@@ -233,7 +248,8 @@ mod test {
         assert_eq!(
             bytes,
             vec![
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 5
             ]
         );
     }
@@ -245,7 +261,7 @@ mod test {
         let mut poly = MultiLinearPoly::new(computation);
 
         // using a random challenge r = 2 for a
-        let eval_value = Fq::from(2);
+        let eval_value = Fq::from(0);
         let eval_position = 0;
         let result = poly.partial_evaluate(eval_value, eval_position);
 
