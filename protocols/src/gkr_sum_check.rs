@@ -1,146 +1,192 @@
-use crate::{multi_linear::MultiLinearPoly, transcript::Transcript};
 use ark_ff::PrimeField;
+use crate::{gkr_protocol::{Circuit, GateOp}, multi_linear::MultiLinearPoly, partial_sum_check::{self}, product_poly::ProductPoly, transcript::Transcript};
 
-#[derive(Debug, Clone)]
-pub struct Proof<F: PrimeField> {
-    pub init_poly_array: Vec<MultiLinearPoly<F>>,
-    pub init_claimed_sum: F,
-    pub sum_polys: Vec<MultiLinearPoly<F>>,
+pub struct GKRProof<F: PrimeField> {
+    pub sum_poly_array: Vec<Vec<ProductPoly<F>>>,
+    pub claimed_sums: Vec<F>,
 }
 
-// The prover doesn't compute the claimed_sum in the proof fn but does it externally and passes it in to the proof fn
-pub fn proof<F: PrimeField>(
-    mut poly_array: Vec<MultiLinearPoly<F>>,
-    init_claimed_sum: F,
-) -> Proof<F> {
-    if poly_array.len() != 2 {
-        panic!("The number of polynomials must be 2");
-    }
+impl<F: PrimeField> Circuit<F> {
+    pub fn proof(&self) -> GKRProof<F> {
+        let mut transcript = Transcript::new();
+        let evaluated_circuit = self.evaluate();
 
-    if poly_array[0].computation.len() != poly_array[1].computation.len() {
-        panic!("The polynomials must have the same length");
-    }
+        let mut sum_poly_array = Vec::new();
+        let mut claimed_sums = Vec::new();
+        
+        // Get the output layer evaluations (W₀)
+        let w_0 = evaluated_circuit[evaluated_circuit.len() - 1].clone();
+        
+        // Pad w_0 to power of 2 if needed
+        let w_0_arr = if w_0.len() == 1 {
+            vec![w_0[0], F::zero()]
+        } else if w_0.len().is_power_of_two() {
+            w_0
+        } else {
+            let target_length = w_0.len().next_power_of_two();
+            let mut padded = w_0.clone();
+            padded.resize(target_length, F::zero());
+            padded
+        };
 
-    let init_poly_a = poly_array[0].computation.clone();
-    let init_poly_b = poly_array[1].computation.clone();
-    let mut transcript = Transcript::new();
-    transcript.absorb(&MultiLinearPoly::to_bytes(
-        poly_array[0].computation.clone(),
-    ));
-    transcript.absorb(&MultiLinearPoly::to_bytes(
-        poly_array[1].computation.clone(),
-    ));
+        // Get random point r₀
+        transcript.absorb(&MultiLinearPoly::to_bytes(w_0_arr.clone()));
+        let r_a = F::from_be_bytes_mod_order(&transcript.squeeze());
 
-    // let init_claimed_sum = poly.computation.iter().sum();
-    let mut sum_polys = vec![];
+        let w_0_eval = MultiLinearPoly::new(w_0_arr).partial_evaluate(r_a, 0); // claimed sum = w_0(r)
+        claimed_sums.push(w_0_eval.computation[0]);
 
-    while poly_array[0].computation.len() > 1 {
-        let half_len = poly_array[0].computation.len() / 2;
+        // f_ri_b_c = [add_i_ri_b_c * (w_i+1_b + w_i+1_c)] + [mul_i_ri_b_c * (w_i+1_b * w_i+1_c)]
+        let next_layer_w = evaluated_circuit.len() - 2;
+        let (w_i_b_exploded, w_i_c_exploded) = self.eval_layer_i(next_layer_w);
 
-        let (left_a, right_a) = poly_array[0].computation.split_at(half_len);
-        let (left_b, right_b) = poly_array[1].computation.split_at(half_len);
+        let sum_term = Circuit::<F>::element_wise_op(w_i_b_exploded.clone(), w_i_c_exploded.clone(), GateOp::Add);
+        let mul_term = Circuit::<F>::element_wise_op(w_i_b_exploded, w_i_c_exploded, GateOp::Mul);
 
-        let left_a_sum: F = left_a.iter().sum();
-        let right_a_sum = right_a.iter().sum();
-        let left_b_sum: F = left_b.iter().sum();
-        let right_b_sum = right_b.iter().sum();
+        let (add_i, mul_i) = self.layer_i_add_mul(0);
+        let add_i_ri = MultiLinearPoly::new(add_i).partial_evaluate(r_a, 0);
+        let mul_i_ri = MultiLinearPoly::new(mul_i).partial_evaluate(r_a, 0);
 
-        let claimed_sum_a: F = poly_array[0].computation.iter().sum();
-        let claimed_sum_b: F = poly_array[1].computation.iter().sum();
+        let p_poly_1 = ProductPoly::new(vec![add_i_ri, MultiLinearPoly { computation: sum_term }]);
+        let p_poly_2 = ProductPoly::new(vec![mul_i_ri, MultiLinearPoly { computation: mul_term }]);
 
-        let claimed_sum = claimed_sum_a + claimed_sum_b;
+        let p_poly = vec![p_poly_1, p_poly_2];
+        sum_poly_array.push(p_poly.clone());
 
-        let sum_poly_a = MultiLinearPoly::new(vec![left_a_sum, right_a_sum]);
-        let sum_poly_b = MultiLinearPoly::new(vec![left_b_sum, right_b_sum]);
+        let p_proof = partial_sum_check::proof::<F>(p_poly, w_0_eval.computation[0]);
+        let challenges = p_proof.challenges;
 
-        let left_sum = sum_poly_a.computation[0] + sum_poly_b.computation[0];
-        let right_sum = sum_poly_a.computation[1] + sum_poly_b.computation[1];
+        // For each layer i (going backwards from output to input)
+        // since layer 0 has been done above, we start with layer 1
+        // i am thinking 1..(self.layers.len() - 1) better so for e.g. 
+        // [0, 1, 2, 3] => would start at 2 and end at 1 as w will go down to 0
+        for layer_idx in (1..(self.layers.len() - 1)).rev() {
+            let next_layer_w = layer_idx + 1;   // this is because w is 1 layer ahead
+            let current_layer_w = evaluated_circuit[layer_idx].clone();
 
-        let sum_poly = MultiLinearPoly::new(vec![left_sum, right_sum]);
+            // claimed_sum = (alpha * w_i(*b)) + (beta * w_i(*c))
+            let claimed_sum = self.new_claimed_sum(current_layer_w, challenges.clone());
+            claimed_sums.push(claimed_sum);
 
-        sum_polys.push(MultiLinearPoly {
-            computation: sum_poly.computation.clone(),
-        });
+            // Get the add and mul vectors for current layer
+            let (new_add, new_mul) = self.gkr_trick(challenges.clone(), layer_idx);
 
-        transcript.absorb(&MultiLinearPoly::to_bytes(vec![claimed_sum]));
-        transcript.absorb(&MultiLinearPoly::to_bytes(sum_poly.computation.clone()));
-        let challenge_bytes = transcript.squeeze();
-        let challenge = F::from_be_bytes_mod_order(&challenge_bytes);
+            // Evaluate Wi+1 at points b* and c*
+            let (w_i_b_exploded, w_i_c_exploded) = self.eval_layer_i(next_layer_w);
 
-        poly_array[0] = poly_array[0].partial_evaluate(challenge, 0);
-        poly_array[1] = poly_array[1].partial_evaluate(challenge, 0);
-    }
+            // Compute f_ri(b, c) = add_i(ri,b,c)(Wi+1(b) + Wi+1(c)) + mul_i(ri,b,c)(Wi+1(b) * Wi+1(c))
+            let sum_term = Circuit::<F>::element_wise_op(
+                w_i_b_exploded.clone(), 
+                w_i_c_exploded.clone(), 
+                GateOp::Add
+            );
+            let mul_term = Circuit::<F>::element_wise_op(
+                w_i_b_exploded, 
+                w_i_c_exploded, 
+                GateOp::Mul
+            );
 
-    Proof {
-        init_poly_array: vec![
-            MultiLinearPoly {
-                computation: init_poly_a,
-            },
-            MultiLinearPoly {
-                computation: init_poly_b,
-            },
-        ],
-        init_claimed_sum,
-        sum_polys,
-    }
-}
+            // Create the polynomials for sum-check
+            let p_poly_1 = ProductPoly::new(vec![new_add, MultiLinearPoly { computation: sum_term }]);
+            let p_poly_2 = ProductPoly::new(vec![new_mul, MultiLinearPoly { computation: mul_term }]);
 
-pub fn verify<F: PrimeField>(mut proof: Proof<F>) -> bool {
-    let mut transcript = Transcript::new();
-    transcript.absorb(&MultiLinearPoly::to_bytes(
-        proof.init_poly_array[0].computation.clone(),
-    ));
-    transcript.absorb(&MultiLinearPoly::to_bytes(
-        proof.init_poly_array[1].computation.clone(),
-    ));
+            let p_poly = vec![p_poly_1, p_poly_2];
+            sum_poly_array.push(p_poly.clone());
 
-    let mut claimed_sum: F = proof.init_claimed_sum;
-    let mut challenges: Vec<F> = vec![];
+            // Run sum-check protocol
+            let p_proof = partial_sum_check::proof::<F>(p_poly, claimed_sum);
+            dbg!(&p_proof);
 
-    for sum_poly in proof.sum_polys.iter() {
-        let poly_sum: F = sum_poly.computation.iter().sum();
-        if claimed_sum != poly_sum {
-            return false;
+            // Verify sum-check protocol. Would be removed, jus for sanity check
+            let p_verify = partial_sum_check::verify(p_proof);
+            dbg!(&p_verify);
         }
 
-        transcript.absorb(&MultiLinearPoly::to_bytes(vec![claimed_sum]));
-        transcript.absorb(&MultiLinearPoly::to_bytes(sum_poly.computation.clone()));
-        let challenge_bytes = transcript.squeeze();
-        let challenge = F::from_be_bytes_mod_order(&challenge_bytes);
-        challenges.push(challenge);
-
-        // verifier uses the (y_1 + (y_2 - y_1) * challenge) to evaluate the polynomial
-        claimed_sum = sum_poly.computation[0]
-            + ((sum_poly.computation[1] - sum_poly.computation[0]) * challenge);
+        GKRProof {
+            sum_poly_array,
+            claimed_sums,
+        }
     }
-
-    let eval_a = proof.init_poly_array[0].evaluate(challenges.clone());
-    let eval_b = proof.init_poly_array[1].evaluate(challenges);
-    let final_eval = eval_a.computation[0] + eval_b.computation[0];
-
-    final_eval == claimed_sum
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
+mod test {
     use ark_bn254::Fq;
+    use crate::gkr_protocol::{Circuit, Gate, GateOp, Layer};
 
     #[test]
-    fn test_proof() {
-        let computation_a = vec![Fq::from(0), Fq::from(3), Fq::from(2), Fq::from(5)];
-        let computation_b = vec![Fq::from(0), Fq::from(3), Fq::from(2), Fq::from(5)];
-        let poly_a = MultiLinearPoly::new(computation_a);
-        let poly_b = MultiLinearPoly::new(computation_b);
+    fn setup_test_circuit() {
+        let inputs = vec![
+            Fq::from(1),
+            Fq::from(2),
+            Fq::from(3),
+            Fq::from(4),
+            Fq::from(5),
+            Fq::from(6),
+            Fq::from(7),
+            Fq::from(8),
+        ];
+        let mut circuit = Circuit::new(inputs);
 
-        let init_sum_a: Fq = poly_a.computation.iter().sum::<Fq>();
-        let init_sum_b: Fq = poly_b.computation.iter().sum::<Fq>();
+        let layer_1 = Layer {
+            gates: vec![
+                Gate {
+                    left: 0,
+                    right: 1,
+                    op: GateOp::Add,
+                    output: 0,
+                },
+                Gate {
+                    left: 2,
+                    right: 3,
+                    op: GateOp::Mul,
+                    output: 1,
+                },
+                Gate {
+                    left: 4,
+                    right: 5,
+                    op: GateOp::Mul,
+                    output: 2,
+                },
+                Gate {
+                    left: 6,
+                    right: 7,
+                    op: GateOp::Mul,
+                    output: 3,
+                },
+            ],
+        };
 
-        let poly_array = vec![poly_a, poly_b];
-        let init_claimed_sum = init_sum_a + init_sum_b;
+        let layer_2 = Layer {
+            gates: vec![
+                Gate {
+                    left: 0,
+                    right: 1,
+                    op: GateOp::Add,
+                    output: 0,
+                },
+                Gate {
+                    left: 2,
+                    right: 3,
+                    op: GateOp::Mul,
+                    output: 1,
+                },
+            ],
+        };
 
-        let proof = proof(poly_array, init_claimed_sum);
-        dbg!(&proof);
-        assert!(verify(proof));
+        let layer_3 = Layer {
+            gates: vec![Gate {
+                left: 0,
+                right: 1,
+                op: GateOp::Add,
+                output: 0,
+            }],
+        };
+
+        circuit.add_layer(layer_1);
+        circuit.add_layer(layer_2);
+        circuit.add_layer(layer_3);
+
+        circuit.proof();
     }
 }

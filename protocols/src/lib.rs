@@ -10,6 +10,7 @@ pub mod product_poly;
 pub mod shamir_secret_sharing;
 pub mod sum_check;
 pub mod transcript;
+pub mod gkr_final_check;
 
 use ark_ff::PrimeField;
 use std::iter::{Product, Sum};

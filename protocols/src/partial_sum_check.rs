@@ -6,9 +6,11 @@ use crate::{
 };
 use ark_ff::PrimeField;
 
+#[derive(Debug)]
 pub struct Proof<F: PrimeField> {
     pub sum_poly: Vec<ProductPoly<F>>,
     pub init_claimed_sum: F,
+    pub challenges: Vec<F>,
     pub round_polys: Vec<Vec<F>>,
 }
 
@@ -34,6 +36,7 @@ fn reduce<F: PrimeField>(m_poly_array: Vec<Vec<F>>) -> Vec<F> {
 pub fn proof<F: PrimeField>(mut sum_poly: Vec<ProductPoly<F>>, init_claimed_sum: F) -> Proof<F> {
     let mut initial_length = sum_poly[0].poly_array.len();
     let mut transcript = Transcript::new();
+    let mut challenges: Vec<F> = vec![];
 
     let mut round_polys = vec![];
 
@@ -49,6 +52,7 @@ pub fn proof<F: PrimeField>(mut sum_poly: Vec<ProductPoly<F>>, init_claimed_sum:
 
         let challenge_bytes = transcript.squeeze();
         let challenge = F::from_be_bytes_mod_order(&challenge_bytes);
+        challenges.push(challenge);
 
         sum_poly = sum_poly
             .iter()
@@ -61,6 +65,7 @@ pub fn proof<F: PrimeField>(mut sum_poly: Vec<ProductPoly<F>>, init_claimed_sum:
     Proof {
         sum_poly,
         init_claimed_sum,
+        challenges,
         round_polys,
     }
 }
@@ -93,7 +98,7 @@ pub fn verify<F: PrimeField>(proof: Proof<F>) -> SubClaim<F> {
     }
 
     SubClaim {
-        challenges: challenges,
+        challenges,
         last_claimed_sum: claimed_sum,
     }
     // vec![(challenges, claimed_sum)]
@@ -112,7 +117,8 @@ mod tests {
         let init_claimed_sum = Fq::from(12);
 
         let proof = proof(vec![prod_poly.clone(), prod_poly], init_claimed_sum);
+        dbg!(&proof);
         let result = verify(proof);
-        dbg!(result);
+        dbg!(&result);
     }
 }
