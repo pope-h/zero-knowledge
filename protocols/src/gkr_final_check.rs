@@ -74,7 +74,7 @@
 //             dbg!(&new_mul);
 
 //             // [new_add(b, c) * (w(b) + w(c))] + [new_mul(b, c) * (w(b) * w(c))]
-//             let (w_i_b_exploded, w_i_c_exploded) = Circuit::<F>::eval_layer_i(current_layer_eval, n_bits);
+//             let (w_i_b_exploded, w_i_c_exploded) = Circuit::<F>::explode_w_i(current_layer_eval, n_bits);
 //             dbg!(&w_i_b_exploded);
 //             dbg!(&w_i_c_exploded);
 //             dbg!("got here");

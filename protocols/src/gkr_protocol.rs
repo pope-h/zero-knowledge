@@ -36,7 +36,7 @@ impl<F: PrimeField> Circuit<F> {
 
     pub fn evaluate(&self) -> Vec<Vec<F>> {
         let mut current_layer = self.inputs.clone();
-        let mut eval_layers = vec![];
+        let mut eval_layers = vec![current_layer.clone()];
 
         for layer in self.layers.iter() {
             let mut next_layer = vec![F::zero(); layer.gates.len()];
@@ -60,7 +60,7 @@ impl<F: PrimeField> Circuit<F> {
     }
 
     pub fn layer_i_add_mul(&self, layer_i: usize) -> (Vec<F>, Vec<F>) {
-        let layer = &self.layers[self.layers.len() - layer_i - 1];
+        let layer = &self.layers[layer_i - 1]; // this is because i added input as first layer
 
         // my discovery is that for a 2-gate with 1-bit each at output and 2-bits each at input
         // for gate counts not in the power of 2, we pad it to the next power of 2
@@ -117,13 +117,13 @@ impl<F: PrimeField> Circuit<F> {
 
     // returns exploded tuple of w_i(b, c) for points b and c
     // where bit_size is the number of bit of either b or c
-    pub fn eval_layer_i(&self, layer_i: usize) -> (Vec<F>, Vec<F>) {
-        if layer_i < 1 || layer_i >= self.layers.len() {
+    pub fn explode_w_i(&self, layer_i: usize) -> (Vec<F>, Vec<F>) {
+        if layer_i > self.layers.len() {
             panic!("INVALID Layer index for EXPLOSION");
         }
 
         let eval_layers = self.evaluate();
-        let poly = &eval_layers[eval_layers.len() - layer_i - 1];
+        let poly = &eval_layers[layer_i];
 
         let n_bits = poly.len();
         let total_combinations = 2usize.pow(n_bits as u32);
@@ -233,13 +233,13 @@ mod test {
         circuit.add_layer(layer);
 
         let result = circuit.evaluate();
-        assert_eq!(result, vec![vec![Fq::from(3), Fq::from(2)]]);
+        assert_eq!(result, vec![vec![Fq::from(1), Fq::from(2)], vec![Fq::from(3), Fq::from(2)]]);
     }
 
     #[test]
     fn test_evaluate_2() {
         let inputs = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
-        let mut circuit = Circuit::new(inputs);
+        let mut circuit = Circuit::new(inputs.clone());
 
         let layer_1 = Layer {
             gates: vec![
@@ -274,7 +274,7 @@ mod test {
         let eval_layer_2 = vec![Fq::from(15)];
 
         let result = circuit.evaluate();
-        assert_eq!(result, vec![eval_layer_1, eval_layer_2]);
+        assert_eq!(result, vec![inputs, eval_layer_1, eval_layer_2]);
     }
 
     #[test]
@@ -289,7 +289,7 @@ mod test {
             Fq::from(7),
             Fq::from(8),
         ];
-        let mut circuit = Circuit::new(inputs);
+        let mut circuit = Circuit::new(inputs.clone());
 
         let layer_1 = Layer {
             gates: vec![
@@ -344,13 +344,13 @@ mod test {
         let eval_layer_2 = vec![Fq::from(15), Fq::from(1680)];
 
         let result = circuit.evaluate();
-        assert_eq!(result, vec![eval_layer_1, eval_layer_2]);
+        assert_eq!(result, vec![inputs, eval_layer_1, eval_layer_2]);
     }
 
     #[test]
     fn test_arithmetic_circuit() {
         let inputs = vec![Fq::from(1), Fq::from(2), Fq::from(1), Fq::from(4)];
-        let mut circuit = Circuit::new(inputs);
+        let mut circuit = Circuit::new(inputs.clone());
 
         let layer_1 = Layer {
             gates: vec![
@@ -405,7 +405,7 @@ mod test {
         let eval_layer_2 = vec![Fq::from(4), Fq::from(32)];
 
         let result = circuit.evaluate();
-        assert_eq!(result, vec![eval_layer_1, eval_layer_2]);
+        assert_eq!(result, vec![inputs, eval_layer_1, eval_layer_2]);
     }
 
     #[test]
@@ -481,13 +481,13 @@ mod test {
         circuit.add_layer(layer_2);
         circuit.add_layer(layer_3);
 
-        let output = circuit.layer_i_add_mul(2);
+        let output = circuit.layer_i_add_mul(3);
         dbg!(output);
         // assert_eq!(output, ([Fq::from(0), Fq::from(1), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)], [Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)]));
     }
 
     #[test]
-    fn test_eval_layer_i() {
+    fn test_explode_w_i() {
         let inputs = vec![
             Fq::from(1),
             Fq::from(2),
@@ -559,7 +559,7 @@ mod test {
         circuit.add_layer(layer_2);
         circuit.add_layer(layer_3);
 
-        let output = circuit.eval_layer_i(1);
+        let output = circuit.explode_w_i(1);
         dbg!(output);
     }
 
