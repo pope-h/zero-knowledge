@@ -63,7 +63,6 @@ impl<F: PrimeField> Circuit<F> {
         let p_proof = partial_sum_check::proof::<F>(p_poly, init_claimed_sum);
         p_proofs.push(p_proof.clone());
         let mut challenges = p_proof.challenges.clone();
-        dbg!(&challenges);
 
         // For each layer i (going backwards from output to input)
         // since layer 0 has been done above, we start with layer 1
@@ -136,132 +135,69 @@ impl<F: PrimeField> Circuit<F> {
         // NOTE that the prover called evaluate meaning he has the Wᵢ values for every step while the verifier only has the input
         // let next_layer_w = 1;
         let mut transcript = Transcript::new();
+        let mut last_challenges = Vec::new();
         let mut curr_challenges = Vec::new();
         let mut current_claimed_sum = F::zero();
         let circuit_len = self.layers.len();    // actual number of layers
         let mut last_idx = 0;
-        dbg!(&circuit_len);
 
         let w_0_arr = proof.output_layer.clone();
         transcript.absorb(&MultiLinearPoly::to_bytes(w_0_arr.clone()));
         let r_a = F::from_be_bytes_mod_order(&transcript.squeeze());
 
-        let init_claimed_sum = MultiLinearPoly::new(w_0_arr).partial_evaluate(r_a, 0).computation[0]; // claimed sum = w_0(r)
-        dbg!(init_claimed_sum);
-
-        dbg!(&proof.p_proofs.len());
-
         let (add_abc, mul_abc) = self.layer_i_add_mul(circuit_len);
         let mut new_add = MultiLinearPoly::new(add_abc).partial_evaluate(r_a, 0);
         let mut new_mul = MultiLinearPoly::new(mul_abc).partial_evaluate(r_a, 0);
-        dbg!(&new_add.computation, &new_mul.computation);
-
-        // let new_add_eval = new_add.evaluate(challenges.clone());
-        // let new_mul_eval = new_mul.evaluate(challenges.clone());
-        // dbg!(&new_add_eval.computation, &new_mul_eval.computation);
-
-        // let w_sum = w_i_rb + w_i_rc;
-        // let w_mul = w_i_rb * w_i_rc;
-
-        // let check = (new_add_eval.computation[0] * w_sum) + (new_mul_eval.computation[0] * w_mul);
 
         for (i, p_proof) in proof.p_proofs.iter().enumerate() {
             let sub_claim = partial_sum_check::verify(p_proof.clone());
             let challenges = sub_claim.challenges.clone();
-            dbg!(&challenges);
-            dbg!(&sub_claim.last_claimed_sum);
+
             curr_challenges = challenges.clone();
             last_idx = i;
-            dbg!(i);
 
             // For all but the last proof, check against w_i_evals
             if i < proof.p_proofs.len() - 1 {
-                dbg!(&proof.p_proofs.len());
-                dbg!("check");
                 let new_add_eval = new_add.evaluate(challenges.clone());
                 let new_mul_eval = new_mul.evaluate(challenges.clone());
-                dbg!(&new_add_eval.computation, &new_mul_eval.computation);
 
                 let (w_i_rb, w_i_rc) = proof.w_i_evals[i];
                 let w_sum = w_i_rb + w_i_rc;
                 let w_mul = w_i_rb * w_i_rc;
 
-                dbg!(&w_sum, &w_mul, &new_add_eval.computation, &new_mul_eval.computation);
                 let check = (new_add_eval.computation[0] * w_sum) + (new_mul_eval.computation[0] * w_mul);
 
-                dbg!(check == sub_claim.last_claimed_sum);
-                dbg!(&check, &sub_claim.last_claimed_sum);
                 if check != sub_claim.last_claimed_sum {
                     return false;
                 }
 
                 (new_add, new_mul) = self.gkr_trick(challenges.clone(), circuit_len - i - 1);
-                dbg!(&new_add.computation, &new_mul.computation);
 
-                // let w_sum = w_i_rb + w_i_rc;
-                // let w_mul = w_i_rb * w_i_rc;
-
-                // check = (new_add_eval.computation[0] * w_sum) + (new_mul_eval.computation[0] * w_mul);
-
-                // update challenges
+                last_challenges = challenges.clone();
             }
 
             current_claimed_sum = sub_claim.last_claimed_sum;
         }
 
         // Finally, check the last claimed sum against the input layer
-        dbg!("Now here");
-        dbg!(&current_claimed_sum);
         let input_evaluations = self.inputs.clone();
         let mut input_poly = MultiLinearPoly::new(input_evaluations);
 
         let mid = curr_challenges.len() / 2;
         let (r_b_challenges, r_c_challenges) = curr_challenges.split_at(mid);
 
-            // let w_i_b = MultiLinearPoly::new(current_layer_w.clone()).evaluate(r_b_challenges.to_vec());
-            // let w_i_c = MultiLinearPoly::new(current_layer_w.clone()).evaluate(r_c_challenges.to_vec());
-
-            dbg!(&input_poly.computation);
-            dbg!(r_b_challenges.len(), r_c_challenges.len());
         let input_eval_b = input_poly.evaluate(r_b_challenges.to_vec()).computation[0];
         let input_eval_c = input_poly.evaluate(r_c_challenges.to_vec()).computation[0];
         let input_w_sum = input_eval_b + input_eval_c;
         let input_w_mul = input_eval_b * input_eval_c;
-        dbg!(&input_w_sum, &input_w_mul);
 
-        dbg!(circuit_len - last_idx);
-        (new_add, new_mul) = self.gkr_trick(curr_challenges.clone(), circuit_len - last_idx);
-        dbg!(&new_add.computation.len(), &new_mul.computation.len());
+        (new_add, new_mul) = self.gkr_trick(last_challenges, circuit_len - last_idx);
         let new_add_eval = new_add.evaluate(curr_challenges.clone()).computation[0];
         let new_mul_eval = new_mul.evaluate(curr_challenges.clone()).computation[0];
-        dbg!(&new_add_eval, &new_mul_eval);
 
         let oracle_check = (new_add_eval * input_w_sum) + (new_mul_eval * input_w_mul);
 
-        // dbg!(&(input_eval_b + input_eval_c), &current_claimed_sum);
-
         oracle_check == current_claimed_sum
-
-        // let w_0_arr = proof.output_layer.clone();
-        // transcript.absorb(&MultiLinearPoly::to_bytes(w_0_arr.clone()));
-        // // let r_a = F::from_be_bytes_mod_order(&transcript.squeeze());
-
-        // // let mid = sub_claim.challenges.len() / 2;
-        // // let (r_b_challenges, r_c_challenges) = sub_claim.challenges.split_at(mid);
-
-        
-        // // let mid = challenges.len() / 2;
-        // // let (r_b_challenges, r_c_challenges) = challenges.split_at(mid);
-
-       
-        
-        
-
-        // let last_c_s = sub_claim.last_claimed_sum;
-        // dbg!(last_c_s);
-
-        // // claimed_sum == proof.claimed_sums[proof.claimed_sums.len() - 1]
-        // true
     }
 }
 
@@ -422,6 +358,6 @@ mod test {
         let proof = circuit.proof();
         let result = circuit.verify(proof);
         dbg!(&result);
-        // assert!(&result);
+        assert!(&result);
     }
 }

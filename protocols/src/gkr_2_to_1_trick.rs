@@ -13,6 +13,8 @@ impl<F: PrimeField> Circuit<F> {
         let beta = F::from_be_bytes_mod_order(&transcript.squeeze());
 
         let (add_i, mul_i) = self.layer_i_add_mul(index);
+        dbg!(add_i.len());
+        dbg!(challenges.len());
 
         let mut add_rb = MultiLinearPoly::new(add_i.clone());
         let mut add_rc = MultiLinearPoly::new(add_i);
@@ -169,10 +171,10 @@ mod test {
         circuit.add_layer(layer_2);
         circuit.add_layer(layer_3);
 
-        let (new_add, new_mul) = circuit.gkr_trick(challenges, 0);
+        let (new_add, new_mul) = circuit.gkr_trick(challenges, 2);
 
-        dbg!(new_add);
-        dbg!(new_mul);
+        dbg!(new_add.computation.len());
+        dbg!(new_mul.computation.len());
     }
 
     #[test]

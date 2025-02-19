@@ -481,8 +481,8 @@ mod test {
         circuit.add_layer(layer_2);
         circuit.add_layer(layer_3);
 
-        let output = circuit.layer_i_add_mul(3);
-        dbg!(output);
+        let output = circuit.layer_i_add_mul(1);
+        dbg!(output.0.len());
         // assert_eq!(output, ([Fq::from(0), Fq::from(1), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)], [Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)]));
     }
 
