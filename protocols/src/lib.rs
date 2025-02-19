@@ -1,7 +1,7 @@
 pub mod fft;
 pub mod fiat_shamir_non_interactive;
 pub mod gkr_2_to_1_trick;
-pub mod gkr_protocol;
+pub mod gkr_circuit;
 pub mod gkr_sum_check;
 pub mod interactive_sum_check;
 pub mod multi_linear;

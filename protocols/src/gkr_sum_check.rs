@@ -1,7 +1,7 @@
 use std::vec;
 
 use ark_ff::PrimeField;
-use crate::{gkr_protocol::{Circuit, GateOp}, multi_linear::MultiLinearPoly, partial_sum_check::{self, Proof}, product_poly::ProductPoly, transcript::Transcript};
+use crate::{gkr_circuit::{Circuit, GateOp}, multi_linear::MultiLinearPoly, partial_sum_check::{self, Proof}, product_poly::ProductPoly, transcript::Transcript};
 
 pub struct GKRProof<F: PrimeField> {
     pub output_layer: Vec<F>, // an array of wᵢ
@@ -204,7 +204,7 @@ impl<F: PrimeField> Circuit<F> {
 #[cfg(test)]
 mod test {
     use ark_bn254::Fq;
-    use crate::gkr_protocol::{Circuit, Gate, GateOp, Layer};
+    use crate::gkr_circuit::{Circuit, Gate, GateOp, Layer};
 
     #[test]
     fn setup_test_circuit() {

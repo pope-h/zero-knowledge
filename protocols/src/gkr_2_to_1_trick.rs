@@ -1,4 +1,4 @@
-use crate::{gkr_protocol::Circuit, multi_linear::MultiLinearPoly, transcript::Transcript};
+use crate::{gkr_circuit::Circuit, multi_linear::MultiLinearPoly, transcript::Transcript};
 use ark_ff::PrimeField;
 
 impl<F: PrimeField> Circuit<F> {
@@ -92,7 +92,7 @@ impl<F: PrimeField> Circuit<F> {
 mod test {
     // use super::*;
     use ark_bn254::Fq;
-    use crate::gkr_protocol::{Circuit, Gate, GateOp, Layer};
+    use crate::gkr_circuit::{Circuit, Gate, GateOp, Layer};
 
     #[test]
     fn setup_test_circuit() {
