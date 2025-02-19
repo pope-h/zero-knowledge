@@ -8,7 +8,7 @@ use ark_ff::PrimeField;
 
 #[derive(Debug, Clone)]
 pub struct Proof<F: PrimeField> {
-    pub sum_poly: Vec<ProductPoly<F>>,  // this is here so the verifier can compute the degree
+    pub sum_poly: Vec<ProductPoly<F>>, // this is here so the verifier can compute the degree
     pub init_claimed_sum: F,
     pub challenges: Vec<F>,
     pub round_polys: Vec<Vec<F>>,
@@ -111,14 +111,33 @@ mod tests {
     #[test]
     fn test_proof() {
         // for a quick test, use [0, 0, 0, 2] and [0, 0, 0, 3]
-        let poly_1 = MultiLinearPoly::new(vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5), Fq::from(6), Fq::from(7), Fq::from(8)]);
-        let poly_2 = MultiLinearPoly::new(vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5), Fq::from(6), Fq::from(7), Fq::from(8)]);
+        let poly_1 = MultiLinearPoly::new(vec![
+            Fq::from(1),
+            Fq::from(2),
+            Fq::from(3),
+            Fq::from(4),
+            Fq::from(5),
+            Fq::from(6),
+            Fq::from(7),
+            Fq::from(8),
+        ]);
+        let poly_2 = MultiLinearPoly::new(vec![
+            Fq::from(1),
+            Fq::from(2),
+            Fq::from(3),
+            Fq::from(4),
+            Fq::from(5),
+            Fq::from(6),
+            Fq::from(7),
+            Fq::from(8),
+        ]);
         let prod_poly = ProductPoly::new(vec![poly_1, poly_2]);
         let init_claimed_sum = Fq::from(408);
 
         let proof = proof(vec![prod_poly.clone(), prod_poly], init_claimed_sum);
         dbg!(&proof);
-        let result = verify(proof);
-        dbg!(&result);
+        let verify = verify(proof);
+        dbg!(&verify);
+        assert_eq!(verify.challenges.len(), 3);
     }
 }

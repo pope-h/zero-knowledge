@@ -167,9 +167,84 @@ impl<F: PrimeField> Circuit<F> {
 }
 
 #[cfg(test)]
-mod test {
+pub mod test {
     use super::*;
     use ark_bn254::Fq;
+
+    pub fn setup_test_circuit8() -> Circuit<Fq> {
+        let inputs = vec![
+            Fq::from(1),
+            Fq::from(2),
+            Fq::from(3),
+            Fq::from(4),
+            Fq::from(5),
+            Fq::from(6),
+            Fq::from(7),
+            Fq::from(8),
+        ];
+        let mut circuit = Circuit::new(inputs);
+
+        let layer_1 = Layer {
+            gates: vec![
+                Gate {
+                    left: 0,
+                    right: 1,
+                    op: GateOp::Add,
+                    output: 0,
+                },
+                Gate {
+                    left: 2,
+                    right: 3,
+                    op: GateOp::Mul,
+                    output: 1,
+                },
+                Gate {
+                    left: 4,
+                    right: 5,
+                    op: GateOp::Mul,
+                    output: 2,
+                },
+                Gate {
+                    left: 6,
+                    right: 7,
+                    op: GateOp::Mul,
+                    output: 3,
+                },
+            ],
+        };
+
+        let layer_2 = Layer {
+            gates: vec![
+                Gate {
+                    left: 0,
+                    right: 1,
+                    op: GateOp::Add,
+                    output: 0,
+                },
+                Gate {
+                    left: 2,
+                    right: 3,
+                    op: GateOp::Mul,
+                    output: 1,
+                },
+            ],
+        };
+
+        let layer_3 = Layer {
+            gates: vec![Gate {
+                left: 0,
+                right: 1,
+                op: GateOp::Add,
+                output: 0,
+            }],
+        };
+
+        circuit.add_layer(layer_1);
+        circuit.add_layer(layer_2);
+        circuit.add_layer(layer_3);
+
+        circuit
+    }
 
     #[test]
     fn test_gate_creation() {
@@ -233,7 +308,13 @@ mod test {
         circuit.add_layer(layer);
 
         let result = circuit.evaluate();
-        assert_eq!(result, vec![vec![Fq::from(1), Fq::from(2)], vec![Fq::from(3), Fq::from(2)]]);
+        assert_eq!(
+            result,
+            vec![
+                vec![Fq::from(1), Fq::from(2)],
+                vec![Fq::from(3), Fq::from(2)]
+            ]
+        );
     }
 
     #[test]
@@ -410,154 +491,15 @@ mod test {
 
     #[test]
     fn test_compute_mul_add() {
-        let inputs = vec![
-            Fq::from(1),
-            Fq::from(2),
-            Fq::from(3),
-            Fq::from(4),
-            Fq::from(5),
-            Fq::from(6),
-            Fq::from(7),
-            Fq::from(8),
-        ];
-        let mut circuit = Circuit::new(inputs);
-
-        let layer_1 = Layer {
-            gates: vec![
-                Gate {
-                    left: 0,
-                    right: 1,
-                    op: GateOp::Add,
-                    output: 0,
-                },
-                Gate {
-                    left: 2,
-                    right: 3,
-                    op: GateOp::Mul,
-                    output: 1,
-                },
-                Gate {
-                    left: 4,
-                    right: 5,
-                    op: GateOp::Mul,
-                    output: 2,
-                },
-                Gate {
-                    left: 6,
-                    right: 7,
-                    op: GateOp::Mul,
-                    output: 3,
-                },
-            ],
-        };
-
-        let layer_2 = Layer {
-            gates: vec![
-                Gate {
-                    left: 0,
-                    right: 1,
-                    op: GateOp::Add,
-                    output: 0,
-                },
-                Gate {
-                    left: 2,
-                    right: 3,
-                    op: GateOp::Mul,
-                    output: 1,
-                },
-            ],
-        };
-
-        let layer_3 = Layer {
-            gates: vec![Gate {
-                left: 0,
-                right: 1,
-                op: GateOp::Add,
-                output: 0,
-            }],
-        };
-
-        circuit.add_layer(layer_1);
-        circuit.add_layer(layer_2);
-        circuit.add_layer(layer_3);
+        let circuit = setup_test_circuit8();
 
         let output = circuit.layer_i_add_mul(1);
         dbg!(output.0.len());
-        // assert_eq!(output, ([Fq::from(0), Fq::from(1), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)], [Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)]));
     }
 
     #[test]
     fn test_explode_w_i() {
-        let inputs = vec![
-            Fq::from(1),
-            Fq::from(2),
-            Fq::from(3),
-            Fq::from(4),
-            Fq::from(5),
-            Fq::from(6),
-            Fq::from(7),
-            Fq::from(8),
-        ];
-        let mut circuit = Circuit::new(inputs);
-
-        let layer_1 = Layer {
-            gates: vec![
-                Gate {
-                    left: 0,
-                    right: 1,
-                    op: GateOp::Add,
-                    output: 0,
-                },
-                Gate {
-                    left: 2,
-                    right: 3,
-                    op: GateOp::Mul,
-                    output: 1,
-                },
-                Gate {
-                    left: 4,
-                    right: 5,
-                    op: GateOp::Mul,
-                    output: 2,
-                },
-                Gate {
-                    left: 6,
-                    right: 7,
-                    op: GateOp::Mul,
-                    output: 3,
-                },
-            ],
-        };
-
-        let layer_2 = Layer {
-            gates: vec![
-                Gate {
-                    left: 0,
-                    right: 1,
-                    op: GateOp::Add,
-                    output: 0,
-                },
-                Gate {
-                    left: 2,
-                    right: 3,
-                    op: GateOp::Mul,
-                    output: 1,
-                },
-            ],
-        };
-
-        let layer_3 = Layer {
-            gates: vec![Gate {
-                left: 0,
-                right: 1,
-                op: GateOp::Add,
-                output: 0,
-            }],
-        };
-
-        circuit.add_layer(layer_1);
-        circuit.add_layer(layer_2);
-        circuit.add_layer(layer_3);
+        let circuit = setup_test_circuit8();
 
         let output = circuit.explode_w_i(1);
         dbg!(output);

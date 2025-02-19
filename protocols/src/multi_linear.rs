@@ -80,6 +80,30 @@ mod test {
     use super::*;
     use ark_bn254::Fq;
 
+    pub fn setup_mle_poly() -> MultiLinearPoly<Fq> {
+        let computation = vec![
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(4),
+            Fq::from(0),
+            Fq::from(4),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(3),
+            Fq::from(3),
+            Fq::from(5),
+            Fq::from(9),
+            Fq::from(8),
+            Fq::from(12),
+        ];
+        let multi_linear_poly = MultiLinearPoly::new(computation);
+
+        multi_linear_poly
+    }
+
     #[test]
     fn test_partial_evaluate() {
         // 2a + 3b
@@ -137,25 +161,7 @@ mod test {
 
     #[test]
     fn test_partial_evaluate_2() {
-        let computation = vec![
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(4),
-            Fq::from(0),
-            Fq::from(4),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(3),
-            Fq::from(3),
-            Fq::from(5),
-            Fq::from(9),
-            Fq::from(8),
-            Fq::from(12),
-        ];
-        let mut multi_linear_poly = MultiLinearPoly::new(computation);
+        let mut multi_linear_poly = setup_mle_poly();
 
         let eval_value = Fq::from(4);
         let eval_value_position = 0;
@@ -178,25 +184,7 @@ mod test {
 
     #[test]
     fn test_partial_evaluate_2_at_2_points() {
-        let computation = vec![
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(4),
-            Fq::from(0),
-            Fq::from(4),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(3),
-            Fq::from(3),
-            Fq::from(5),
-            Fq::from(9),
-            Fq::from(8),
-            Fq::from(12),
-        ];
-        let mut multi_linear_poly = MultiLinearPoly::new(computation);
+        let mut multi_linear_poly = setup_mle_poly();
         let eval_value_position = 0;
 
         let eval_value_a = Fq::from(4);
@@ -214,25 +202,7 @@ mod test {
 
     #[test]
     fn test_evaluate_2() {
-        let computation = vec![
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(4),
-            Fq::from(0),
-            Fq::from(4),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(3),
-            Fq::from(3),
-            Fq::from(5),
-            Fq::from(9),
-            Fq::from(8),
-            Fq::from(12),
-        ];
-        let mut multi_linear_poly = MultiLinearPoly::new(computation);
+        let mut multi_linear_poly = setup_mle_poly();
 
         let eval_points = vec![Fq::from(4), Fq::from(2), Fq::from(6), Fq::from(1)];
         let result = multi_linear_poly.evaluate(eval_points);

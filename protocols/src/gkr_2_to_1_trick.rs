@@ -13,8 +13,6 @@ impl<F: PrimeField> Circuit<F> {
         let beta = F::from_be_bytes_mod_order(&transcript.squeeze());
 
         let (add_i, mul_i) = self.layer_i_add_mul(index);
-        dbg!(add_i.len());
-        dbg!(challenges.len());
 
         let mut add_rb = MultiLinearPoly::new(add_i.clone());
         let mut add_rc = MultiLinearPoly::new(add_i);
@@ -91,168 +89,30 @@ impl<F: PrimeField> Circuit<F> {
 #[cfg(test)]
 mod test {
     // use super::*;
+    use crate::gkr_circuit::test::setup_test_circuit8;
     use ark_bn254::Fq;
-    use crate::gkr_circuit::{Circuit, Gate, GateOp, Layer};
 
     #[test]
     fn setup_test_circuit() {
-        let inputs = vec![
-            Fq::from(1),
-            Fq::from(2),
-            Fq::from(3),
-            Fq::from(4),
-            Fq::from(5),
-            Fq::from(6),
-            Fq::from(7),
-            Fq::from(8),
-        ];
-        let mut circuit = Circuit::new(inputs);
-
-        let layer_1 = Layer {
-            gates: vec![
-                Gate {
-                    left: 0,
-                    right: 1,
-                    op: GateOp::Add,
-                    output: 0,
-                },
-                Gate {
-                    left: 2,
-                    right: 3,
-                    op: GateOp::Mul,
-                    output: 1,
-                },
-                Gate {
-                    left: 4,
-                    right: 5,
-                    op: GateOp::Mul,
-                    output: 2,
-                },
-                Gate {
-                    left: 6,
-                    right: 7,
-                    op: GateOp::Mul,
-                    output: 3,
-                },
-            ],
-        };
-
-        let layer_2 = Layer {
-            gates: vec![
-                Gate {
-                    left: 0,
-                    right: 1,
-                    op: GateOp::Add,
-                    output: 0,
-                },
-                Gate {
-                    left: 2,
-                    right: 3,
-                    op: GateOp::Mul,
-                    output: 1,
-                },
-            ],
-        };
-
-        let layer_3 = Layer {
-            gates: vec![Gate {
-                left: 0,
-                right: 1,
-                op: GateOp::Add,
-                output: 0,
-            }],
-        };
+        let circuit = setup_test_circuit8();
 
         let r_b = Fq::from(2);
         let r_c = Fq::from(3);
         let challenges = vec![r_b, r_c];
 
-        circuit.add_layer(layer_1);
-        circuit.add_layer(layer_2);
-        circuit.add_layer(layer_3);
-
         let (new_add, new_mul) = circuit.gkr_trick(challenges, 2);
 
-        dbg!(new_add.computation.len());
-        dbg!(new_mul.computation.len());
+        assert_eq!(new_add.computation.len(), 16);
+        assert_eq!(new_mul.computation.len(), 16);
     }
 
     #[test]
     fn test_new_claimed_sum() {
-        let inputs = vec![
-            Fq::from(1),
-            Fq::from(2),
-            Fq::from(3),
-            Fq::from(4),
-            Fq::from(5),
-            Fq::from(6),
-            Fq::from(7),
-            Fq::from(8),
-        ];
-        let mut circuit = Circuit::new(inputs);
-
-        let layer_1 = Layer {
-            gates: vec![
-                Gate {
-                    left: 0,
-                    right: 1,
-                    op: GateOp::Add,
-                    output: 0,
-                },
-                Gate {
-                    left: 2,
-                    right: 3,
-                    op: GateOp::Mul,
-                    output: 1,
-                },
-                Gate {
-                    left: 4,
-                    right: 5,
-                    op: GateOp::Mul,
-                    output: 2,
-                },
-                Gate {
-                    left: 6,
-                    right: 7,
-                    op: GateOp::Mul,
-                    output: 3,
-                },
-            ],
-        };
-
-        let layer_2 = Layer {
-            gates: vec![
-                Gate {
-                    left: 0,
-                    right: 1,
-                    op: GateOp::Add,
-                    output: 0,
-                },
-                Gate {
-                    left: 2,
-                    right: 3,
-                    op: GateOp::Mul,
-                    output: 1,
-                },
-            ],
-        };
-
-        let layer_3 = Layer {
-            gates: vec![Gate {
-                left: 0,
-                right: 1,
-                op: GateOp::Add,
-                output: 0,
-            }],
-        };
+        let circuit = setup_test_circuit8();
 
         let r_b = Fq::from(2);
         let r_c = Fq::from(3);
         let challenges = vec![r_b, r_c];
-
-        circuit.add_layer(layer_1);
-        circuit.add_layer(layer_2);
-        circuit.add_layer(layer_3);
 
         let evaluated_circuit = circuit.evaluate();
         let w_i_eval = evaluated_circuit[1].clone();

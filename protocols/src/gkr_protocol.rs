@@ -1,12 +1,18 @@
 use std::vec;
 
+use crate::{
+    gkr_circuit::{Circuit, GateOp},
+    multi_linear::MultiLinearPoly,
+    partial_sum_check::{self, Proof},
+    product_poly::ProductPoly,
+    transcript::Transcript,
+};
 use ark_ff::PrimeField;
-use crate::{gkr_circuit::{Circuit, GateOp}, multi_linear::MultiLinearPoly, partial_sum_check::{self, Proof}, product_poly::ProductPoly, transcript::Transcript};
 
 pub struct GKRProof<F: PrimeField> {
-    pub output_layer: Vec<F>, // an array of wᵢ
+    pub output_layer: Vec<F>,    // an array of wᵢ
     pub w_i_evals: Vec<(F, F)>,  // array of wᵢ evaluated at r_b and r_c
-    pub p_proofs: Vec<Proof<F>>,  // array of sum-check proofs
+    pub p_proofs: Vec<Proof<F>>, // array of sum-check proofs
 }
 
 impl<F: PrimeField> Circuit<F> {
@@ -19,10 +25,10 @@ impl<F: PrimeField> Circuit<F> {
         let mut p_proofs = Vec::new();
 
         let circuit_len = evaluated_circuit.len() - 1;
-        
+
         // Get the output layer evaluations (W₀)
         let w_0 = evaluated_circuit[circuit_len].clone();
-        
+
         // Pad W₀ to power of 2 if needed
         let w_0_arr = if w_0.len() == 1 {
             vec![w_0[0], F::zero()]
@@ -47,15 +53,29 @@ impl<F: PrimeField> Circuit<F> {
         let next_layer_idx = circuit_len - 1;
         let (w_i_b_exploded, w_i_c_exploded) = self.explode_w_i(next_layer_idx);
 
-        let sum_term = Circuit::<F>::element_wise_op(w_i_b_exploded.clone(), w_i_c_exploded.clone(), GateOp::Add);
+        let sum_term = Circuit::<F>::element_wise_op(
+            w_i_b_exploded.clone(),
+            w_i_c_exploded.clone(),
+            GateOp::Add,
+        );
         let mul_term = Circuit::<F>::element_wise_op(w_i_b_exploded, w_i_c_exploded, GateOp::Mul);
 
         let (add_i, mul_i) = self.layer_i_add_mul(circuit_len);
         let add_i_ri = MultiLinearPoly::new(add_i).partial_evaluate(r_a, 0);
         let mul_i_ri = MultiLinearPoly::new(mul_i).partial_evaluate(r_a, 0);
 
-        let p_poly_1 = ProductPoly::new(vec![add_i_ri, MultiLinearPoly { computation: sum_term }]);
-        let p_poly_2 = ProductPoly::new(vec![mul_i_ri, MultiLinearPoly { computation: mul_term }]);
+        let p_poly_1 = ProductPoly::new(vec![
+            add_i_ri,
+            MultiLinearPoly {
+                computation: sum_term,
+            },
+        ]);
+        let p_poly_2 = ProductPoly::new(vec![
+            mul_i_ri,
+            MultiLinearPoly {
+                computation: mul_term,
+            },
+        ]);
 
         let p_poly = vec![p_poly_1, p_poly_2];
         sum_poly_array.push(p_poly.clone());
@@ -65,11 +85,10 @@ impl<F: PrimeField> Circuit<F> {
         let mut challenges = p_proof.challenges.clone();
 
         // For each layer i (going backwards from output to input)
-        // since layer 0 has been done above, we start with layer 1
-        // i am thinking 1..(self.layers.len() - 1) better so for e.g. 
+        // since last layer has been done, we start with next layer
         // [0, 1, 2, 3] => would start at 2 and end at 1 as w will go down to 0
         for layer_idx in (1..circuit_len).rev() {
-            let next_layer_idx = layer_idx - 1;   // this is because w is 1 layer ahead
+            let next_layer_idx = layer_idx - 1; // this is because w is 1 layer ahead
             let current_layer_w = evaluated_circuit[layer_idx].clone();
 
             // claimed_sum = (alpha * Wᵢ(*b)) + (beta * Wᵢ(*c))
@@ -83,19 +102,26 @@ impl<F: PrimeField> Circuit<F> {
 
             // Compute f_rᵢ(b, c) = addᵢ(rᵢ,b,c)(Wᵢ₊₁(b) + Wᵢ₊₁(c)) + mulᵢ(rᵢ,b,c)(Wᵢ₊₁(b) * Wᵢ₊₁(c))
             let sum_term = Circuit::<F>::element_wise_op(
-                w_i_b_exploded.clone(), 
-                w_i_c_exploded.clone(), 
-                GateOp::Add
+                w_i_b_exploded.clone(),
+                w_i_c_exploded.clone(),
+                GateOp::Add,
             );
-            let mul_term = Circuit::<F>::element_wise_op(
-                w_i_b_exploded, 
-                w_i_c_exploded, 
-                GateOp::Mul
-            );
+            let mul_term =
+                Circuit::<F>::element_wise_op(w_i_b_exploded, w_i_c_exploded, GateOp::Mul);
 
             // Create the polynomials for sum-check
-            let p_poly_1 = ProductPoly::new(vec![new_add, MultiLinearPoly { computation: sum_term }]);
-            let p_poly_2 = ProductPoly::new(vec![new_mul, MultiLinearPoly { computation: mul_term }]);
+            let p_poly_1 = ProductPoly::new(vec![
+                new_add,
+                MultiLinearPoly {
+                    computation: sum_term,
+                },
+            ]);
+            let p_poly_2 = ProductPoly::new(vec![
+                new_mul,
+                MultiLinearPoly {
+                    computation: mul_term,
+                },
+            ]);
 
             let p_poly = vec![p_poly_1, p_poly_2];
             sum_poly_array.push(p_poly.clone());
@@ -115,8 +141,10 @@ impl<F: PrimeField> Circuit<F> {
             let mid = challenges.len() / 2;
             let (r_b_challenges, r_c_challenges) = challenges.split_at(mid);
 
-            let w_i_b = MultiLinearPoly::new(current_layer_w.clone()).evaluate(r_b_challenges.to_vec());
-            let w_i_c = MultiLinearPoly::new(current_layer_w.clone()).evaluate(r_c_challenges.to_vec());
+            let w_i_b =
+                MultiLinearPoly::new(current_layer_w.clone()).evaluate(r_b_challenges.to_vec());
+            let w_i_c =
+                MultiLinearPoly::new(current_layer_w.clone()).evaluate(r_c_challenges.to_vec());
 
             w_i_evals.push((w_i_b.computation[0], w_i_c.computation[0]));
         }
@@ -124,30 +152,27 @@ impl<F: PrimeField> Circuit<F> {
         GKRProof {
             output_layer,
             w_i_evals,
-            p_proofs
+            p_proofs,
         }
     }
 
     pub fn verify(&self, proof: GKRProof<F>) -> bool {
-        // performs oracle check for each layer using the below
-        // f(b, c) = [add_i(b, c) * (w_i+1(b) + w_i+1(c))] + [mul_i(b,c) * (w_i+1(b) * w_i+1(c))]
         // recall that f(a, b, c) has already been evaluated by r_a to get f(b, c)
         // NOTE that the prover called evaluate meaning he has the Wᵢ values for every step while the verifier only has the input
-        // let next_layer_w = 1;
         let mut transcript = Transcript::new();
         let mut last_challenges = Vec::new();
         let mut curr_challenges = Vec::new();
         let mut current_claimed_sum = F::zero();
-        let circuit_len = self.layers.len();    // actual number of layers
+        let circuit_len = self.layers.len(); // actual number of layers
         let mut last_idx = 0;
 
         let w_0_arr = proof.output_layer.clone();
         transcript.absorb(&MultiLinearPoly::to_bytes(w_0_arr.clone()));
         let r_a = F::from_be_bytes_mod_order(&transcript.squeeze());
 
-        let (add_abc, mul_abc) = self.layer_i_add_mul(circuit_len);
-        let mut new_add = MultiLinearPoly::new(add_abc).partial_evaluate(r_a, 0);
-        let mut new_mul = MultiLinearPoly::new(mul_abc).partial_evaluate(r_a, 0);
+        let (add_i, mul_i) = self.layer_i_add_mul(circuit_len);
+        let mut new_add = MultiLinearPoly::new(add_i).partial_evaluate(r_a, 0);
+        let mut new_mul = MultiLinearPoly::new(mul_i).partial_evaluate(r_a, 0);
 
         for (i, p_proof) in proof.p_proofs.iter().enumerate() {
             let sub_claim = partial_sum_check::verify(p_proof.clone());
@@ -165,7 +190,8 @@ impl<F: PrimeField> Circuit<F> {
                 let w_sum = w_i_rb + w_i_rc;
                 let w_mul = w_i_rb * w_i_rc;
 
-                let check = (new_add_eval.computation[0] * w_sum) + (new_mul_eval.computation[0] * w_mul);
+                let check =
+                    (new_add_eval.computation[0] * w_sum) + (new_mul_eval.computation[0] * w_mul);
 
                 if check != sub_claim.last_claimed_sum {
                     return false;
@@ -179,7 +205,8 @@ impl<F: PrimeField> Circuit<F> {
             current_claimed_sum = sub_claim.last_claimed_sum;
         }
 
-        // Finally, check the last claimed sum against the input layer
+        // Finally, performs oracle check for each layer using the below
+        // f(b, c) = [add_i(b, c) * (w_i+1(b) + w_i+1(c))] + [mul_i(b,c) * (w_i+1(b) * w_i+1(c))]
         let input_evaluations = self.inputs.clone();
         let mut input_poly = MultiLinearPoly::new(input_evaluations);
 
@@ -203,161 +230,21 @@ impl<F: PrimeField> Circuit<F> {
 
 #[cfg(test)]
 mod test {
-    use ark_bn254::Fq;
-    use crate::gkr_circuit::{Circuit, Gate, GateOp, Layer};
+    use crate::gkr_circuit::test::setup_test_circuit8;
 
     #[test]
-    fn setup_test_circuit() {
-        let inputs = vec![
-            Fq::from(1),
-            Fq::from(2),
-            Fq::from(3),
-            Fq::from(4),
-            Fq::from(5),
-            Fq::from(6),
-            Fq::from(7),
-            Fq::from(8),
-        ];
-        let mut circuit = Circuit::new(inputs);
-
-        let layer_1 = Layer {
-            gates: vec![
-                Gate {
-                    left: 0,
-                    right: 1,
-                    op: GateOp::Add,
-                    output: 0,
-                },
-                Gate {
-                    left: 2,
-                    right: 3,
-                    op: GateOp::Mul,
-                    output: 1,
-                },
-                Gate {
-                    left: 4,
-                    right: 5,
-                    op: GateOp::Mul,
-                    output: 2,
-                },
-                Gate {
-                    left: 6,
-                    right: 7,
-                    op: GateOp::Mul,
-                    output: 3,
-                },
-            ],
-        };
-
-        let layer_2 = Layer {
-            gates: vec![
-                Gate {
-                    left: 0,
-                    right: 1,
-                    op: GateOp::Add,
-                    output: 0,
-                },
-                Gate {
-                    left: 2,
-                    right: 3,
-                    op: GateOp::Mul,
-                    output: 1,
-                },
-            ],
-        };
-
-        let layer_3 = Layer {
-            gates: vec![Gate {
-                left: 0,
-                right: 1,
-                op: GateOp::Add,
-                output: 0,
-            }],
-        };
-
-        circuit.add_layer(layer_1);
-        circuit.add_layer(layer_2);
-        circuit.add_layer(layer_3);
+    fn test_gkr_protocol_proof() {
+        let circuit = setup_test_circuit8();
 
         circuit.proof();
     }
 
     #[test]
-    fn test_gkr_proof() {
-        let inputs = vec![
-            Fq::from(1),
-            Fq::from(2),
-            Fq::from(3),
-            Fq::from(4),
-            Fq::from(5),
-            Fq::from(6),
-            Fq::from(7),
-            Fq::from(8),
-        ];
-        let mut circuit = Circuit::new(inputs);
-
-        let layer_1 = Layer {
-            gates: vec![
-                Gate {
-                    left: 0,
-                    right: 1,
-                    op: GateOp::Add,
-                    output: 0,
-                },
-                Gate {
-                    left: 2,
-                    right: 3,
-                    op: GateOp::Mul,
-                    output: 1,
-                },
-                Gate {
-                    left: 4,
-                    right: 5,
-                    op: GateOp::Mul,
-                    output: 2,
-                },
-                Gate {
-                    left: 6,
-                    right: 7,
-                    op: GateOp::Mul,
-                    output: 3,
-                },
-            ],
-        };
-
-        let layer_2 = Layer {
-            gates: vec![
-                Gate {
-                    left: 0,
-                    right: 1,
-                    op: GateOp::Add,
-                    output: 0,
-                },
-                Gate {
-                    left: 2,
-                    right: 3,
-                    op: GateOp::Mul,
-                    output: 1,
-                },
-            ],
-        };
-
-        let layer_3 = Layer {
-            gates: vec![Gate {
-                left: 0,
-                right: 1,
-                op: GateOp::Add,
-                output: 0,
-            }],
-        };
-
-        circuit.add_layer(layer_1);
-        circuit.add_layer(layer_2);
-        circuit.add_layer(layer_3);
+    fn test_gkr_protocol_verify() {
+        let circuit = setup_test_circuit8();
 
         let proof = circuit.proof();
         let result = circuit.verify(proof);
-        dbg!(&result);
         assert!(&result);
     }
 }
