@@ -19,7 +19,7 @@ impl<F: PrimeField> VerifierStruct<F> {
     }
 
     pub fn convert_to_bytes(computation: Vec<F>) -> Vec<u8> {
-        MultiLinearPoly::to_bytes(computation)
+        MultiLinearPoly::to_bytes(&computation)
     }
 
     // pub fn convert_from_bytes(bytes: &[u8]) -> Vec<F> {

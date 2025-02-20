@@ -46,7 +46,7 @@ impl<F: PrimeField> Circuit<F> {
         let w_0_len = w_0_arr.len().ilog2();
 
         // Get random point r₀
-        transcript.absorb(&MultiLinearPoly::to_bytes(w_0_arr.clone()));
+        transcript.absorb(&MultiLinearPoly::to_bytes(&w_0_arr));
         for _ in 0..w_0_len {
             let r_a = F::from_be_bytes_mod_order(&transcript.squeeze());
             r_a_challenges.push(r_a);
@@ -178,7 +178,7 @@ impl<F: PrimeField> Circuit<F> {
         let mut last_idx = 0;
 
         let w_0_arr = proof.output_layer.clone();
-        transcript.absorb(&MultiLinearPoly::to_bytes(w_0_arr.clone()));
+        transcript.absorb(&MultiLinearPoly::to_bytes(&w_0_arr));
         let r_a = F::from_be_bytes_mod_order(&transcript.squeeze());
 
         let (add_i, mul_i) = self.layer_i_add_mul(circuit_len);

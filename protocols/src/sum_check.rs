@@ -12,7 +12,7 @@ pub struct Proof<F: PrimeField> {
 pub fn proof<F: PrimeField>(mut poly: MultiLinearPoly<F>, init_claimed_sum: F) -> Proof<F> {
     let init_poly = poly.computation.clone();
     let mut transcript = Transcript::new();
-    transcript.absorb(&MultiLinearPoly::to_bytes(poly.computation.clone()));
+    transcript.absorb(&MultiLinearPoly::to_bytes(&poly.computation.clone()));
 
     // let init_claimed_sum = poly.computation.iter().sum();
     let mut sum_polys = vec![];
@@ -30,8 +30,8 @@ pub fn proof<F: PrimeField>(mut poly: MultiLinearPoly<F>, init_claimed_sum: F) -
             computation: sum_poly.computation.clone(),
         });
 
-        transcript.absorb(&MultiLinearPoly::to_bytes(vec![claimed_sum]));
-        transcript.absorb(&MultiLinearPoly::to_bytes(sum_poly.computation.clone()));
+        transcript.absorb(&MultiLinearPoly::to_bytes(&vec![claimed_sum]));
+        transcript.absorb(&MultiLinearPoly::to_bytes(&sum_poly.computation.clone()));
         let challenge_bytes = transcript.squeeze();
         let challenge = F::from_be_bytes_mod_order(&challenge_bytes);
 
@@ -56,7 +56,7 @@ pub fn verify<F: PrimeField>(mut proof: Proof<F>) -> bool {
 
     let mut transcript = Transcript::new();
     transcript.absorb(&MultiLinearPoly::to_bytes(
-        proof.init_poly.computation.clone(),
+        &proof.init_poly.computation.clone(),
     ));
 
     let mut claimed_sum: F = proof.init_claimed_sum;
@@ -68,8 +68,8 @@ pub fn verify<F: PrimeField>(mut proof: Proof<F>) -> bool {
             return false;
         }
 
-        transcript.absorb(&MultiLinearPoly::to_bytes(vec![claimed_sum]));
-        transcript.absorb(&MultiLinearPoly::to_bytes(sum_poly.computation.clone()));
+        transcript.absorb(&MultiLinearPoly::to_bytes(&vec![claimed_sum]));
+        transcript.absorb(&MultiLinearPoly::to_bytes(&sum_poly.computation.clone()));
         let challenge_bytes = transcript.squeeze();
         let challenge = F::from_be_bytes_mod_order(&challenge_bytes);
         challenges.push(challenge);

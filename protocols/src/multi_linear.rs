@@ -67,7 +67,7 @@ impl<F: PrimeField> MultiLinearPoly<F> {
         this_computation
     }
 
-    pub fn to_bytes(computation: Vec<F>) -> Vec<u8> {
+    pub fn to_bytes(computation:  &[F]) -> Vec<u8> {
         computation
             .iter()
             .flat_map(|x| F::into_bigint(*x).to_bytes_be())
@@ -213,7 +213,7 @@ mod test {
     #[test]
     fn test_to_bytes() {
         let computation = vec![Fq::from(5)];
-        let bytes = MultiLinearPoly::to_bytes(computation);
+        let bytes = MultiLinearPoly::to_bytes(&computation);
 
         assert_eq!(
             bytes,

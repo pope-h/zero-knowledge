@@ -36,7 +36,7 @@ impl<F: PrimeField> ProverStruct<F> {
     }
 
     pub fn convert_to_bytes(computation: Vec<F>) -> Vec<u8> {
-        MultiLinearPoly::to_bytes(computation)
+        MultiLinearPoly::to_bytes(&computation)
     }
 
     pub fn generate_proof(&mut self) -> Vec<F> {

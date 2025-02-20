@@ -48,7 +48,7 @@ pub fn proof<F: PrimeField>(mut sum_poly: Vec<ProductPoly<F>>, init_claimed_sum:
         let round_poly = reduce(eval_array);
 
         round_polys.push(round_poly.clone());
-        transcript.absorb(&MultiLinearPoly::to_bytes(round_poly.clone()));
+        transcript.absorb(&MultiLinearPoly::to_bytes(&round_poly));
 
         let challenge_bytes = transcript.squeeze();
         let challenge = F::from_be_bytes_mod_order(&challenge_bytes);
@@ -88,7 +88,7 @@ pub fn verify<F: PrimeField>(proof: Proof<F>) -> SubClaim<F> {
             panic!("Claimed sum does not match verifier sum");
         }
 
-        transcript.absorb(&MultiLinearPoly::to_bytes(round_poly.clone()));
+        transcript.absorb(&MultiLinearPoly::to_bytes(&round_poly));
         let challenge_bytes = transcript.squeeze();
         let challenge = F::from_be_bytes_mod_order(&challenge_bytes);
         challenges.push(challenge);
