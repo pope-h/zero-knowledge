@@ -58,7 +58,7 @@ impl<F: PrimeField> UnivariatePoly<F> {
             .unwrap()
     }
 
-    pub fn interpolate(xs: Vec<F>, ys: Vec<F>) -> Self {
+    pub fn interpolate(xs: &[F], ys: &[F]) -> Self {
         xs.iter()
             .zip(ys.iter())
             .map(|(x, y)| Self::basis(x, &xs).scalar_mul(y))
@@ -233,8 +233,8 @@ mod test {
         // f(x) = 2x
         // [(2, 4), (4, 8)]
         let maybe_2x = UnivariatePoly::interpolate(
-            vec![Fq::from(2), Fq::from(4)],
-            vec![Fq::from(4), Fq::from(8)],
+            &vec![Fq::from(2), Fq::from(4)],
+            &vec![Fq::from(4), Fq::from(8)],
         );
         assert_eq!(maybe_2x.coefficient, vec![Fq::from(0), Fq::from(2)]);
 
@@ -248,7 +248,7 @@ mod test {
         // [(0, 0), (1, 1), (2, 1), (3, 2), (4, 3), (5, 5), (6, 8), (7, 13)]
 
         let fib = UnivariatePoly::interpolate(
-            vec![
+            &vec![
                 Fq::from(0),
                 Fq::from(1),
                 Fq::from(2),
@@ -258,7 +258,7 @@ mod test {
                 Fq::from(6),
                 Fq::from(7),
             ],
-            vec![
+            &vec![
                 Fq::from(0),
                 Fq::from(1),
                 Fq::from(1),
@@ -282,7 +282,7 @@ mod test {
     #[should_panic(expected = "assertion `left == right` failed\n  left: 189\n right: 55")]
     fn test_unequal_output() {
         let fib = UnivariatePoly::interpolate(
-            vec![
+            &vec![
                 Fq::from(0),
                 Fq::from(1),
                 Fq::from(2),
@@ -292,7 +292,7 @@ mod test {
                 Fq::from(6),
                 Fq::from(7),
             ],
-            vec![
+            &vec![
                 Fq::from(0),
                 Fq::from(1),
                 Fq::from(1),
@@ -315,8 +315,8 @@ mod test {
     #[test]
     fn test_gkr_interpolate() {
         let interpolate = UnivariatePoly::interpolate(
-            vec![Fq::from(0), Fq::from(1), Fq::from(2)],
-            vec![Fq::from(0), Fq::from(12), Fq::from(48)],
+            &vec![Fq::from(0), Fq::from(1), Fq::from(2)],
+            &vec![Fq::from(0), Fq::from(12), Fq::from(48)],
         );
         dbg!(&interpolate);
 

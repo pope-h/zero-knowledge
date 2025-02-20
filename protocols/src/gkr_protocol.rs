@@ -167,7 +167,7 @@ impl<F: PrimeField> Circuit<F> {
         }
     }
 
-    pub fn verify(&self, proof: GKRProof<F>) -> bool {
+    pub fn verify(&self, proof: &GKRProof<F>) -> bool {
         // recall that f(a, b, c) has already been evaluated by r_a to get f(b, c)
         // NOTE that the prover called evaluate meaning he has the Wᵢ values for every step while the verifier only has the input
         let mut transcript = Transcript::new();
@@ -255,7 +255,7 @@ mod test {
         let circuit = setup_test_circuit8();
 
         let proof = circuit.proof();
-        let result = circuit.verify(proof);
+        let result = circuit.verify(&proof);
         assert!(&result);
     }
 }

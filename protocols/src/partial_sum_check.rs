@@ -93,7 +93,7 @@ pub fn verify<F: PrimeField>(proof: Proof<F>) -> SubClaim<F> {
         let challenge = F::from_be_bytes_mod_order(&challenge_bytes);
         challenges.push(challenge);
 
-        let equation = UnivariatePoly::interpolate(xs.clone(), round_poly.clone());
+        let equation = UnivariatePoly::interpolate(&xs, &round_poly);
         claimed_sum = equation.evaluate(challenge);
     }
 

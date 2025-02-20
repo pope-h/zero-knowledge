@@ -54,7 +54,7 @@ impl<F: PrimeField> ProductPoly<F> {
     }
 
     // e.g. [[1, 2], [3, 4], [5, 6]] -> [[1 * 3 * 5], [2 * 4 * 6]] -> [15, 48]
-    fn reduce(&self, m_poly_array: Vec<MultiLinearPoly<F>>) -> MultiLinearPoly<F> {
+    fn reduce(&self, m_poly_array: &[MultiLinearPoly<F>]) -> MultiLinearPoly<F> {
         let size = self.poly_array[0].computation.len() / 2;
         let mut new_array: Vec<F> = Vec::with_capacity(size);
         for i in 0..m_poly_array[0].computation.len() {
@@ -83,7 +83,7 @@ impl<F: PrimeField> ProductPoly<F> {
             let eval_point = F::from(i as u64);
             let partial_eval = this_computation.partial_evaluate(eval_point, 0);
 
-            let prod_partial_eval = partial_eval.reduce(partial_eval.poly_array.clone());
+            let prod_partial_eval = partial_eval.reduce(&partial_eval.poly_array);
             let element_sum: F = prod_partial_eval.computation.iter().sum();
 
             new_array.push(element_sum);

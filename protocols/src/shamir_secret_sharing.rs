@@ -60,7 +60,7 @@ pub fn reconstruct_secret<F: PrimeField>(shares: &[ShamirShare<F>], threshold: u
     let xs: Vec<F> = shares.iter().map(|share| F::from(share.x)).collect();
     let ys: Vec<F> = shares.iter().map(|share| F::from(share.y)).collect();
 
-    UnivariatePoly::interpolate(xs, ys).evaluate(F::from(0))
+    UnivariatePoly::interpolate(&xs, &ys).evaluate(F::from(0))
 }
 
 #[cfg(test)]
