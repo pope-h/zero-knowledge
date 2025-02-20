@@ -23,6 +23,7 @@ impl<F: PrimeField> Circuit<F> {
         let mut sum_poly_array = Vec::new();
         let mut w_i_evals = Vec::new();
         let mut p_proofs = Vec::new();
+        let mut r_a_challenges = Vec::new();
 
         let circuit_len = evaluated_circuit.len() - 1;
 
@@ -42,11 +43,16 @@ impl<F: PrimeField> Circuit<F> {
         };
         let output_layer = w_0_arr.clone();
 
+        let w_0_len = w_0_arr.len().ilog2();
+
         // Get random point r₀
         transcript.absorb(&MultiLinearPoly::to_bytes(w_0_arr.clone()));
-        let r_a = F::from_be_bytes_mod_order(&transcript.squeeze());
+        for _ in 0..w_0_len {
+            let r_a = F::from_be_bytes_mod_order(&transcript.squeeze());
+            r_a_challenges.push(r_a);
+        }
 
-        let w_0_eval = MultiLinearPoly::new(w_0_arr).partial_evaluate(r_a, 0); // claimed sum = w_0(r)
+        let w_0_eval = MultiLinearPoly::new(w_0_arr).evaluate(r_a_challenges.clone()); // claimed sum = w_0(r)
         let init_claimed_sum = w_0_eval.computation[0];
 
         // f_ri_b_c = [add_i_ri_b_c * (w_i+1_b + w_i+1_c)] + [mul_i_ri_b_c * (w_i+1_b * w_i+1_c)]
@@ -61,17 +67,22 @@ impl<F: PrimeField> Circuit<F> {
         let mul_term = Circuit::<F>::element_wise_op(w_i_b_exploded, w_i_c_exploded, GateOp::Mul);
 
         let (add_i, mul_i) = self.layer_i_add_mul(circuit_len);
-        let add_i_ri = MultiLinearPoly::new(add_i).partial_evaluate(r_a, 0);
-        let mul_i_ri = MultiLinearPoly::new(mul_i).partial_evaluate(r_a, 0);
+        let mut add_i_mle = MultiLinearPoly::new(add_i);
+        let mut mul_i_mle = MultiLinearPoly::new(mul_i);
+
+        for r_a in r_a_challenges.iter() {
+            add_i_mle = add_i_mle.partial_evaluate(*r_a, 0);
+            mul_i_mle = mul_i_mle.partial_evaluate(*r_a, 0);
+        }
 
         let p_poly_1 = ProductPoly::new(vec![
-            add_i_ri,
+            add_i_mle,
             MultiLinearPoly {
                 computation: sum_term,
             },
         ]);
         let p_poly_2 = ProductPoly::new(vec![
-            mul_i_ri,
+            mul_i_mle,
             MultiLinearPoly {
                 computation: mul_term,
             },
