@@ -51,7 +51,7 @@ impl<F: PrimeField> MultiLinearPoly<F> {
         MultiLinearPoly::new(new_computation)
     }
 
-    pub fn evaluate(&mut self, eval_points: Vec<F>) -> Self {
+    pub fn evaluate(&mut self, eval_points: &[F]) -> Self {
         if eval_points.len() != self.variable_count() as usize {
             panic!("The number of eval points must be equal to the number of variables");
         }
@@ -154,7 +154,7 @@ mod test {
         let mut multi_linear_poly = MultiLinearPoly::new(computation);
 
         let eval_points = vec![Fq::from(1), Fq::from(1)];
-        let result = multi_linear_poly.evaluate(eval_points);
+        let result = multi_linear_poly.evaluate(&eval_points);
 
         assert_eq!(result.computation, vec![Fq::from(5)]);
     }
@@ -205,7 +205,7 @@ mod test {
         let mut multi_linear_poly = setup_mle_poly();
 
         let eval_points = vec![Fq::from(4), Fq::from(2), Fq::from(6), Fq::from(1)];
-        let result = multi_linear_poly.evaluate(eval_points);
+        let result = multi_linear_poly.evaluate(&eval_points);
 
         assert_eq!(result.computation, vec![Fq::from(120)]);
     }
@@ -245,7 +245,7 @@ mod test {
         let mut poly = MultiLinearPoly::new(computation);
 
         let eval_points = vec![Fq::from(1), Fq::from(1)];
-        let result = poly.evaluate(eval_points);
+        let result = poly.evaluate(&eval_points);
 
         assert_eq!(result.computation, vec![Fq::from(56)]);
     }
@@ -256,7 +256,7 @@ mod test {
         let mut poly = MultiLinearPoly::new(computation);
 
         let eval_points = vec![Fq::from(2)];
-        let result = poly.evaluate(eval_points);
+        let result = poly.evaluate(&eval_points);
 
         dbg!(result);
     }

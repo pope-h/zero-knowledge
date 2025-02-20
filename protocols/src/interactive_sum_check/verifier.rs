@@ -70,7 +70,7 @@ impl<F: PrimeField> VerifierStruct<F> {
             final_eval.partial_evaluate(self.challenges[self.challenges.len() - 1], 0);
 
         let mut this_computation = self.bh_computation.clone();
-        let final_output = this_computation.evaluate(self.challenges.clone());
+        let final_output = this_computation.evaluate(&self.challenges);
 
         final_output.computation[0] == final_eval_at_challenge.computation[0]
     }

@@ -52,7 +52,7 @@ impl<F: PrimeField> Circuit<F> {
             r_a_challenges.push(r_a);
         }
 
-        let w_0_eval = MultiLinearPoly::new(w_0_arr).evaluate(r_a_challenges.clone()); // claimed sum = w_0(r)
+        let w_0_eval = MultiLinearPoly::new(w_0_arr).evaluate(&r_a_challenges); // claimed sum = w_0(r)
         let init_claimed_sum = w_0_eval.computation[0];
 
         // f_ri_b_c = [add_i_ri_b_c * (w_i+1_b + w_i+1_c)] + [mul_i_ri_b_c * (w_i+1_b * w_i+1_c)]
@@ -153,9 +153,9 @@ impl<F: PrimeField> Circuit<F> {
             let (r_b_challenges, r_c_challenges) = challenges.split_at(mid);
 
             let w_i_b =
-                MultiLinearPoly::new(current_layer_w.clone()).evaluate(r_b_challenges.to_vec());
+                MultiLinearPoly::new(current_layer_w.clone()).evaluate(&r_b_challenges);
             let w_i_c =
-                MultiLinearPoly::new(current_layer_w.clone()).evaluate(r_c_challenges.to_vec());
+                MultiLinearPoly::new(current_layer_w.clone()).evaluate(&r_c_challenges);
 
             w_i_evals.push((w_i_b.computation[0], w_i_c.computation[0]));
         }
@@ -194,8 +194,8 @@ impl<F: PrimeField> Circuit<F> {
 
             // For all but the last proof, check against w_i_evals
             if i < proof.p_proofs.len() - 1 {
-                let new_add_eval = new_add.evaluate(challenges.clone());
-                let new_mul_eval = new_mul.evaluate(challenges.clone());
+                let new_add_eval = new_add.evaluate(&challenges);
+                let new_mul_eval = new_mul.evaluate(&challenges);
 
                 let (w_i_rb, w_i_rc) = proof.w_i_evals[i];
                 let w_sum = w_i_rb + w_i_rc;
@@ -224,14 +224,14 @@ impl<F: PrimeField> Circuit<F> {
         let mid = curr_challenges.len() / 2;
         let (r_b_challenges, r_c_challenges) = curr_challenges.split_at(mid);
 
-        let input_eval_b = input_poly.evaluate(r_b_challenges.to_vec()).computation[0];
-        let input_eval_c = input_poly.evaluate(r_c_challenges.to_vec()).computation[0];
+        let input_eval_b = input_poly.evaluate(&r_b_challenges).computation[0];
+        let input_eval_c = input_poly.evaluate(&r_c_challenges).computation[0];
         let input_w_sum = input_eval_b + input_eval_c;
         let input_w_mul = input_eval_b * input_eval_c;
 
         (new_add, new_mul) = self.gkr_trick(last_challenges, circuit_len - last_idx);
-        let new_add_eval = new_add.evaluate(curr_challenges.clone()).computation[0];
-        let new_mul_eval = new_mul.evaluate(curr_challenges.clone()).computation[0];
+        let new_add_eval = new_add.evaluate(&curr_challenges).computation[0];
+        let new_mul_eval = new_mul.evaluate(&curr_challenges).computation[0];
 
         let oracle_check = (new_add_eval * input_w_sum) + (new_mul_eval * input_w_mul);
 

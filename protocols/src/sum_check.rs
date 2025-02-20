@@ -79,7 +79,7 @@ pub fn verify<F: PrimeField>(mut proof: Proof<F>) -> bool {
             + ((sum_poly.computation[1] - sum_poly.computation[0]) * challenge);
     }
 
-    let final_eval = proof.init_poly.evaluate(challenges);
+    let final_eval = proof.init_poly.evaluate(&challenges);
 
     final_eval.computation[0] == claimed_sum
 }

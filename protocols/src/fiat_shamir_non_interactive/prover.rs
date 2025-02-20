@@ -86,7 +86,7 @@ impl<F: PrimeField> ProverStruct<F> {
         let mut current_poly_ml = MultiLinearPoly::new(self.bh_computation.computation.clone());
 
         let final_output = current_poly_ml
-            .evaluate(self.final_state.challenges.clone())
+            .evaluate(&self.final_state.challenges)
             .computation[0];
 
         final_output == self.final_state.final_univariate_poly[0]
