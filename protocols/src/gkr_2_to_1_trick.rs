@@ -4,7 +4,7 @@ use ark_ff::PrimeField;
 impl<F: PrimeField> Circuit<F> {
     pub fn gkr_trick(
         &self,
-        challenges: Vec<F>,
+        challenges: &[F],
         index: usize,
     ) -> (MultiLinearPoly<F>, MultiLinearPoly<F>) {
         let mut transcript = Transcript::new();
@@ -52,7 +52,7 @@ impl<F: PrimeField> Circuit<F> {
         (new_add, new_mul)
     }
 
-    pub fn new_claimed_sum(&self, w_i_arr: Vec<F>, challenges: Vec<F>) -> F {
+    pub fn new_claimed_sum(&self, w_i_arr: Vec<F>, challenges: &[F]) -> F {
         let mut transcript = Transcript::new();
 
         let w_i_eval = MultiLinearPoly::new(w_i_arr);
@@ -100,7 +100,7 @@ mod test {
         let r_c = Fq::from(3);
         let challenges = vec![r_b, r_c];
 
-        let (new_add, new_mul) = circuit.gkr_trick(challenges, 2);
+        let (new_add, new_mul) = circuit.gkr_trick(&challenges, 2);
 
         assert_eq!(new_add.computation.len(), 16);
         assert_eq!(new_mul.computation.len(), 16);
@@ -117,7 +117,7 @@ mod test {
         let evaluated_circuit = circuit.evaluate();
         let w_i_eval = evaluated_circuit[1].clone();
 
-        let claimed_sum = circuit.new_claimed_sum(w_i_eval, challenges);
+        let claimed_sum = circuit.new_claimed_sum(w_i_eval, &challenges);
 
         dbg!(claimed_sum);
     }

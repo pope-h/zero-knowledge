@@ -148,7 +148,7 @@ impl<F: PrimeField> Circuit<F> {
     }
 
     // this function computes the addition or multiplication of w_i(b, c) for all points b and c
-    pub fn element_wise_op(poly_a: Vec<F>, poly_b: Vec<F>, op: GateOp) -> Vec<F> {
+    pub fn element_wise_op(poly_a: &[F], poly_b: &[F], op: GateOp) -> Vec<F> {
         if poly_a.len() != poly_b.len() {
             panic!("The polynomials must be of the same size");
         }
@@ -510,7 +510,7 @@ pub mod test {
         let poly_a = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
         let poly_b = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
 
-        let result = Circuit::element_wise_op(poly_a, poly_b, GateOp::Add);
+        let result = Circuit::element_wise_op(&poly_a, &poly_b, GateOp::Add);
         assert_eq!(
             result,
             vec![Fq::from(2), Fq::from(4), Fq::from(6), Fq::from(8)]
@@ -522,7 +522,7 @@ pub mod test {
         let poly_a = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
         let poly_b = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
 
-        let result = Circuit::element_wise_op(poly_a, poly_b, GateOp::Mul);
+        let result = Circuit::element_wise_op(&poly_a, &poly_b, GateOp::Mul);
         assert_eq!(
             result,
             vec![Fq::from(1), Fq::from(4), Fq::from(9), Fq::from(16)]

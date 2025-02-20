@@ -60,11 +60,11 @@ impl<F: PrimeField> Circuit<F> {
         let (w_i_b_exploded, w_i_c_exploded) = self.explode_w_i(next_layer_idx);
 
         let sum_term = Circuit::<F>::element_wise_op(
-            w_i_b_exploded.clone(),
-            w_i_c_exploded.clone(),
+            &w_i_b_exploded,
+            &w_i_c_exploded,
             GateOp::Add,
         );
-        let mul_term = Circuit::<F>::element_wise_op(w_i_b_exploded, w_i_c_exploded, GateOp::Mul);
+        let mul_term = Circuit::<F>::element_wise_op(&w_i_b_exploded, &w_i_c_exploded, GateOp::Mul);
 
         let (add_i, mul_i) = self.layer_i_add_mul(circuit_len);
         let mut add_i_mle = MultiLinearPoly::new(add_i);
@@ -103,22 +103,22 @@ impl<F: PrimeField> Circuit<F> {
             let current_layer_w = evaluated_circuit[layer_idx].clone();
 
             // claimed_sum = (alpha * Wᵢ(*b)) + (beta * Wᵢ(*c))
-            let claimed_sum = self.new_claimed_sum(current_layer_w, challenges.clone());
+            let claimed_sum = self.new_claimed_sum(current_layer_w, &challenges);
 
             // Get the add and mul vectors for current layer
-            let (new_add, new_mul) = self.gkr_trick(challenges.clone(), layer_idx);
+            let (new_add, new_mul) = self.gkr_trick(&challenges, layer_idx);
 
             // Get the next layer evaluations (Wᵢ₊₁)
             let (w_i_b_exploded, w_i_c_exploded) = self.explode_w_i(next_layer_idx);
 
             // Compute f_rᵢ(b, c) = addᵢ(rᵢ,b,c)(Wᵢ₊₁(b) + Wᵢ₊₁(c)) + mulᵢ(rᵢ,b,c)(Wᵢ₊₁(b) * Wᵢ₊₁(c))
             let sum_term = Circuit::<F>::element_wise_op(
-                w_i_b_exploded.clone(),
-                w_i_c_exploded.clone(),
+                &w_i_b_exploded,
+                &w_i_c_exploded,
                 GateOp::Add,
             );
             let mul_term =
-                Circuit::<F>::element_wise_op(w_i_b_exploded, w_i_c_exploded, GateOp::Mul);
+                Circuit::<F>::element_wise_op(&w_i_b_exploded, &w_i_c_exploded, GateOp::Mul);
 
             // Create the polynomials for sum-check
             let p_poly_1 = ProductPoly::new(vec![
@@ -208,7 +208,7 @@ impl<F: PrimeField> Circuit<F> {
                     return false;
                 }
 
-                (new_add, new_mul) = self.gkr_trick(challenges.clone(), circuit_len - i - 1);
+                (new_add, new_mul) = self.gkr_trick(&challenges, circuit_len - i - 1);
 
                 last_challenges = challenges.clone();
             }
@@ -229,7 +229,7 @@ impl<F: PrimeField> Circuit<F> {
         let input_w_sum = input_eval_b + input_eval_c;
         let input_w_mul = input_eval_b * input_eval_c;
 
-        (new_add, new_mul) = self.gkr_trick(last_challenges, circuit_len - last_idx);
+        (new_add, new_mul) = self.gkr_trick(&last_challenges, circuit_len - last_idx);
         let new_add_eval = new_add.evaluate(&curr_challenges).computation[0];
         let new_mul_eval = new_mul.evaluate(&curr_challenges).computation[0];
 
