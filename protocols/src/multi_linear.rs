@@ -67,7 +67,7 @@ impl<F: PrimeField> MultiLinearPoly<F> {
         this_computation
     }
 
-    pub fn to_bytes(computation:  &[F]) -> Vec<u8> {
+    pub fn to_bytes(computation: &[F]) -> Vec<u8> {
         computation
             .iter()
             .flat_map(|x| F::into_bigint(*x).to_bytes_be())

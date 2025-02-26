@@ -1,7 +1,7 @@
 use core::panic;
 
 use crate::{
-    multi_linear::MultiLinearPoly, product_poly::ProductPoly, transcript::Transcript,
+    gkr::product_poly::ProductPoly, multi_linear::MultiLinearPoly, transcript::Transcript,
     UnivariatePoly,
 };
 use ark_ff::PrimeField;

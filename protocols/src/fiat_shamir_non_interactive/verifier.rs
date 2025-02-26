@@ -66,9 +66,7 @@ impl<F: PrimeField> VerifierStruct<F> {
 
         let mut this_computation = self.bh_computation.clone();
         let full_evaluation = MultiLinearPoly::new(vec![
-            this_computation
-                .evaluate(&self.challenges)
-                .computation[0],
+            this_computation.evaluate(&self.challenges).computation[0],
         ]);
 
         final_eval_at_challenge == full_evaluation

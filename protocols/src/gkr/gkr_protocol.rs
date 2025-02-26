@@ -1,10 +1,10 @@
 use std::vec;
 
 use crate::{
-    gkr_circuit::{Circuit, GateOp},
+    gkr::gkr_circuit::{Circuit, GateOp},
+    gkr::partial_sum_check::{self, Proof},
+    gkr::product_poly::ProductPoly,
     multi_linear::MultiLinearPoly,
-    partial_sum_check::{self, Proof},
-    product_poly::ProductPoly,
     transcript::Transcript,
 };
 use ark_ff::PrimeField;
@@ -59,11 +59,7 @@ impl<F: PrimeField> Circuit<F> {
         let next_layer_idx = circuit_len - 1;
         let (w_i_b_exploded, w_i_c_exploded) = self.explode_w_i(next_layer_idx);
 
-        let sum_term = Circuit::<F>::element_wise_op(
-            &w_i_b_exploded,
-            &w_i_c_exploded,
-            GateOp::Add,
-        );
+        let sum_term = Circuit::<F>::element_wise_op(&w_i_b_exploded, &w_i_c_exploded, GateOp::Add);
         let mul_term = Circuit::<F>::element_wise_op(&w_i_b_exploded, &w_i_c_exploded, GateOp::Mul);
 
         let (add_i, mul_i) = self.layer_i_add_mul(circuit_len);
@@ -112,11 +108,8 @@ impl<F: PrimeField> Circuit<F> {
             let (w_i_b_exploded, w_i_c_exploded) = self.explode_w_i(next_layer_idx);
 
             // Compute f_rᵢ(b, c) = addᵢ(rᵢ,b,c)(Wᵢ₊₁(b) + Wᵢ₊₁(c)) + mulᵢ(rᵢ,b,c)(Wᵢ₊₁(b) * Wᵢ₊₁(c))
-            let sum_term = Circuit::<F>::element_wise_op(
-                &w_i_b_exploded,
-                &w_i_c_exploded,
-                GateOp::Add,
-            );
+            let sum_term =
+                Circuit::<F>::element_wise_op(&w_i_b_exploded, &w_i_c_exploded, GateOp::Add);
             let mul_term =
                 Circuit::<F>::element_wise_op(&w_i_b_exploded, &w_i_c_exploded, GateOp::Mul);
 
@@ -152,10 +145,8 @@ impl<F: PrimeField> Circuit<F> {
             let mid = challenges.len() / 2;
             let (r_b_challenges, r_c_challenges) = challenges.split_at(mid);
 
-            let w_i_b =
-                MultiLinearPoly::new(current_layer_w.clone()).evaluate(&r_b_challenges);
-            let w_i_c =
-                MultiLinearPoly::new(current_layer_w.clone()).evaluate(&r_c_challenges);
+            let w_i_b = MultiLinearPoly::new(current_layer_w.clone()).evaluate(&r_b_challenges);
+            let w_i_c = MultiLinearPoly::new(current_layer_w.clone()).evaluate(&r_c_challenges);
 
             w_i_evals.push((w_i_b.computation[0], w_i_c.computation[0]));
         }
@@ -241,7 +232,7 @@ impl<F: PrimeField> Circuit<F> {
 
 #[cfg(test)]
 mod test {
-    use crate::gkr_circuit::test::setup_test_circuit8;
+    use crate::gkr::gkr_circuit::test::setup_test_circuit8;
 
     #[test]
     fn test_gkr_protocol_proof() {

@@ -1,13 +1,10 @@
 pub mod fft;
-pub mod gkr_2_to_1_trick;
-pub mod gkr_circuit;
-pub mod gkr_protocol;
 pub mod multi_linear;
-pub mod partial_sum_check;
-pub mod product_poly;
 pub mod shamir_secret_sharing;
 pub mod sum_check;
 pub mod transcript;
+
+pub mod gkr;
 
 pub mod fiat_shamir_non_interactive;
 pub mod interactive_sum_check;
