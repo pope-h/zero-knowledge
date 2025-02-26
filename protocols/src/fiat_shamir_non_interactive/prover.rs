@@ -23,7 +23,7 @@ pub struct ProverStruct<F: PrimeField> {
 impl<F: PrimeField> ProverStruct<F> {
     pub fn new(bh_computation: Vec<F>) -> Self {
         ProverStruct {
-            bh_computation: MultiLinearPoly::new(bh_computation),
+            bh_computation: MultiLinearPoly::new(&bh_computation),
             proof: Proof {
                 claimed_sums: Vec::new(),
                 sum_polys: Vec::new(),
@@ -40,7 +40,7 @@ impl<F: PrimeField> ProverStruct<F> {
     }
 
     pub fn generate_proof(&mut self) -> Vec<F> {
-        let mut current_poly_ml = MultiLinearPoly::new(self.bh_computation.computation.clone());
+        let mut current_poly_ml = MultiLinearPoly::new(&self.bh_computation.computation);
         let mut transcript = Transcript::new();
         transcript.append(&ProverStruct::convert_to_bytes(
             current_poly_ml.computation.clone(),
@@ -55,7 +55,7 @@ impl<F: PrimeField> ProverStruct<F> {
             let left_sum: F = left.iter().sum();
             let right_sum = right.iter().sum();
 
-            let sum_poly = MultiLinearPoly::new(vec![left_sum, right_sum]);
+            let sum_poly = MultiLinearPoly::new(&vec![left_sum, right_sum]);
             // println!("Sum poly is {:?}", sum_poly);
             self.proof.claimed_sums.push(claimed_sum);
             self.proof.sum_polys.push(MultiLinearPoly {
@@ -83,7 +83,7 @@ impl<F: PrimeField> ProverStruct<F> {
     }
 
     pub fn verify_proof(&self) -> bool {
-        let mut current_poly_ml = MultiLinearPoly::new(self.bh_computation.computation.clone());
+        let mut current_poly_ml = MultiLinearPoly::new(&self.bh_computation.computation);
 
         let final_output = current_poly_ml
             .evaluate(&self.final_state.challenges)

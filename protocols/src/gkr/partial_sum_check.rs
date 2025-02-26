@@ -111,7 +111,7 @@ mod tests {
     #[test]
     fn test_proof() {
         // for a quick test, use [0, 0, 0, 2] and [0, 0, 0, 3]
-        let poly_1 = MultiLinearPoly::new(vec![
+        let poly_1 = MultiLinearPoly::new(&vec![
             Fq::from(1),
             Fq::from(2),
             Fq::from(3),
@@ -121,7 +121,7 @@ mod tests {
             Fq::from(7),
             Fq::from(8),
         ]);
-        let poly_2 = MultiLinearPoly::new(vec![
+        let poly_2 = MultiLinearPoly::new(&vec![
             Fq::from(1),
             Fq::from(2),
             Fq::from(3),

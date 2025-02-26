@@ -14,10 +14,10 @@ impl<F: PrimeField> Circuit<F> {
 
         let (add_i, mul_i) = self.layer_i_add_mul(index);
 
-        let mut add_rb = MultiLinearPoly::new(add_i.clone());
-        let mut add_rc = MultiLinearPoly::new(add_i);
-        let mut mul_rb = MultiLinearPoly::new(mul_i.clone());
-        let mut mul_rc = MultiLinearPoly::new(mul_i);
+        let mut add_rb = MultiLinearPoly::new(&add_i);
+        let mut add_rc = MultiLinearPoly::new(&add_i);
+        let mut mul_rb = MultiLinearPoly::new(&mul_i);
+        let mut mul_rc = MultiLinearPoly::new(&mul_i);
 
         let mid = challenges.len() / 2;
         let (r_b_challenges, r_c_challenges) = challenges.split_at(mid);
@@ -32,22 +32,23 @@ impl<F: PrimeField> Circuit<F> {
             mul_rc = mul_rc.partial_evaluate(r_c, 0);
         }
 
-        let new_add = MultiLinearPoly::new(
+        let new_add_values: Vec<F> = 
             add_rb
                 .computation
                 .iter()
                 .zip(add_rc.computation.iter())
                 .map(|(&rb_val, &rc_val)| (alpha * rb_val) + (beta * rc_val))
-                .collect(),
-        );
-        let new_mul = MultiLinearPoly::new(
+                .collect();
+        let new_add = MultiLinearPoly::new(&new_add_values);
+        
+        let new_mul_values: Vec<F> =
             mul_rb
                 .computation
                 .iter()
                 .zip(mul_rc.computation.iter())
                 .map(|(&rb_val, &rc_val)| (alpha * rb_val) + (beta * rc_val))
-                .collect(),
-        );
+                .collect();
+        let new_mul = MultiLinearPoly::new(&new_mul_values);
 
         (new_add, new_mul)
     }
@@ -55,7 +56,7 @@ impl<F: PrimeField> Circuit<F> {
     pub fn new_claimed_sum(&self, w_i_arr: Vec<F>, challenges: &[F]) -> F {
         let mut transcript = Transcript::new();
 
-        let w_i_eval = MultiLinearPoly::new(w_i_arr);
+        let w_i_eval = MultiLinearPoly::new(&w_i_arr);
 
         let alpha = F::from_be_bytes_mod_order(&transcript.squeeze());
         let beta = F::from_be_bytes_mod_order(&transcript.squeeze());

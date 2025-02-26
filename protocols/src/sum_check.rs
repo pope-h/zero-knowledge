@@ -24,7 +24,7 @@ pub fn proof<F: PrimeField>(mut poly: MultiLinearPoly<F>, init_claimed_sum: F) -
         let right_sum = right.iter().sum();
 
         let claimed_sum: F = poly.computation.iter().sum();
-        let sum_poly = MultiLinearPoly::new(vec![left_sum, right_sum]);
+        let sum_poly = MultiLinearPoly::new(&vec![left_sum, right_sum]);
         // println!("Sum poly is {:?}", sum_poly);
         sum_polys.push(MultiLinearPoly {
             computation: sum_poly.computation.clone(),
@@ -92,7 +92,7 @@ mod tests {
 
     #[test]
     fn test_proof() {
-        let poly = vec![MultiLinearPoly::new(vec![
+        let poly = vec![MultiLinearPoly::new(&vec![
             Fq::from(0),
             Fq::from(0),
             Fq::from(0),
@@ -120,7 +120,7 @@ mod tests {
 
     #[test]
     fn test_verify() {
-        let poly = vec![MultiLinearPoly::new(vec![
+        let poly = vec![MultiLinearPoly::new(&vec![
             Fq::from(0),
             Fq::from(0),
             Fq::from(0),

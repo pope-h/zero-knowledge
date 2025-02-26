@@ -18,11 +18,11 @@ pub struct ProverStruct<F: PrimeField> {
 impl<F: PrimeField> ProverStruct<F> {
     pub fn new(bh_computation: Vec<F>) -> Self {
         ProverStruct {
-            bh_computation: MultiLinearPoly::new(bh_computation.clone()),
+            bh_computation: MultiLinearPoly::new(&bh_computation),
             proof: Proof {
                 claimed_sums: Vec::new(),
                 sum_polys: Vec::new(),
-                current_poly: MultiLinearPoly::new(bh_computation),
+                current_poly: MultiLinearPoly::new(&bh_computation),
             },
         }
     }
@@ -35,7 +35,7 @@ impl<F: PrimeField> ProverStruct<F> {
         let left_sum: F = left.iter().sum();
         let right_sum = right.iter().sum();
 
-        let sum_poly = MultiLinearPoly::new(vec![left_sum, right_sum]);
+        let sum_poly = MultiLinearPoly::new(&vec![left_sum, right_sum]);
         self.proof.claimed_sums.push(claimed_sum);
         self.proof.sum_polys.push(sum_poly.clone());
 
@@ -49,7 +49,7 @@ impl<F: PrimeField> ProverStruct<F> {
             .clone()
             .partial_evaluate(challenge, 0);
 
-        self.proof.current_poly = MultiLinearPoly::new(new_poly.computation.clone());
+        self.proof.current_poly = MultiLinearPoly::new(&new_poly.computation);
     }
 
     pub fn get_proof(&self) -> Proof<F> {

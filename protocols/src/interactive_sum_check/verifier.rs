@@ -11,7 +11,7 @@ pub struct VerifierStruct<F: PrimeField> {
 impl<F: PrimeField> VerifierStruct<F> {
     pub fn new(bh_computation: Vec<F>) -> Self {
         VerifierStruct {
-            bh_computation: MultiLinearPoly::new(bh_computation),
+            bh_computation: MultiLinearPoly::new(&bh_computation),
             challenges: Vec::new(),
             final_eval_poly: Vec::with_capacity(1),
             transcript: Transcript::new(),
@@ -64,7 +64,7 @@ impl<F: PrimeField> VerifierStruct<F> {
     }
 
     pub fn verify_proof(&mut self) -> bool {
-        let mut final_eval: MultiLinearPoly<F> = MultiLinearPoly::new(self.final_eval_poly.clone());
+        let mut final_eval: MultiLinearPoly<F> = MultiLinearPoly::new(&self.final_eval_poly);
 
         let final_eval_at_challenge =
             final_eval.partial_evaluate(self.challenges[self.challenges.len() - 1], 0);

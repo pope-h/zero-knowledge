@@ -52,7 +52,7 @@ impl<F: PrimeField> Circuit<F> {
             r_a_challenges.push(r_a);
         }
 
-        let w_0_eval = MultiLinearPoly::new(w_0_arr).evaluate(&r_a_challenges); // claimed sum = w_0(r)
+        let w_0_eval = MultiLinearPoly::new(&w_0_arr).evaluate(&r_a_challenges); // claimed sum = w_0(r)
         let init_claimed_sum = w_0_eval.computation[0];
 
         // f_ri_b_c = [add_i_ri_b_c * (w_i+1_b + w_i+1_c)] + [mul_i_ri_b_c * (w_i+1_b * w_i+1_c)]
@@ -63,8 +63,8 @@ impl<F: PrimeField> Circuit<F> {
         let mul_term = Circuit::<F>::element_wise_op(&w_i_b_exploded, &w_i_c_exploded, GateOp::Mul);
 
         let (add_i, mul_i) = self.layer_i_add_mul(circuit_len);
-        let mut add_i_mle = MultiLinearPoly::new(add_i);
-        let mut mul_i_mle = MultiLinearPoly::new(mul_i);
+        let mut add_i_mle = MultiLinearPoly::new(&add_i);
+        let mut mul_i_mle = MultiLinearPoly::new(&mul_i);
 
         for r_a in r_a_challenges.iter() {
             add_i_mle = add_i_mle.partial_evaluate(*r_a, 0);
@@ -145,8 +145,8 @@ impl<F: PrimeField> Circuit<F> {
             let mid = challenges.len() / 2;
             let (r_b_challenges, r_c_challenges) = challenges.split_at(mid);
 
-            let w_i_b = MultiLinearPoly::new(current_layer_w.clone()).evaluate(&r_b_challenges);
-            let w_i_c = MultiLinearPoly::new(current_layer_w.clone()).evaluate(&r_c_challenges);
+            let w_i_b = MultiLinearPoly::new(&current_layer_w).evaluate(&r_b_challenges);
+            let w_i_c = MultiLinearPoly::new(&current_layer_w).evaluate(&r_c_challenges);
 
             w_i_evals.push((w_i_b.computation[0], w_i_c.computation[0]));
         }
@@ -173,8 +173,8 @@ impl<F: PrimeField> Circuit<F> {
         let r_a = F::from_be_bytes_mod_order(&transcript.squeeze());
 
         let (add_i, mul_i) = self.layer_i_add_mul(circuit_len);
-        let mut new_add = MultiLinearPoly::new(add_i).partial_evaluate(r_a, 0);
-        let mut new_mul = MultiLinearPoly::new(mul_i).partial_evaluate(r_a, 0);
+        let mut new_add = MultiLinearPoly::new(&add_i).partial_evaluate(r_a, 0);
+        let mut new_mul = MultiLinearPoly::new(&mul_i).partial_evaluate(r_a, 0);
 
         for (i, p_proof) in proof.p_proofs.iter().enumerate() {
             let sub_claim = partial_sum_check::verify(p_proof.clone());
@@ -210,7 +210,7 @@ impl<F: PrimeField> Circuit<F> {
         // Finally, performs oracle check for each layer using the below
         // f(b, c) = [add_i(b, c) * (w_i+1(b) + w_i+1(c))] + [mul_i(b,c) * (w_i+1(b) * w_i+1(c))]
         let input_evaluations = self.inputs.clone();
-        let mut input_poly = MultiLinearPoly::new(input_evaluations);
+        let mut input_poly = MultiLinearPoly::new(&input_evaluations);
 
         let mid = curr_challenges.len() / 2;
         let (r_b_challenges, r_c_challenges) = curr_challenges.split_at(mid);

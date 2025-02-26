@@ -9,11 +9,11 @@ pub struct MultiLinearPoly<F: PrimeField> {
 }
 
 impl<F: PrimeField> MultiLinearPoly<F> {
-    pub fn new(computation: Vec<F>) -> Self {
+    pub fn new(computation: &[F]) -> Self {
         if !computation.len().is_power_of_two() {
             panic!("The computation array must be in the power of 2");
         }
-        MultiLinearPoly { computation }
+        MultiLinearPoly { computation: computation.to_vec() }
     }
 
     fn variable_count(&self) -> u32 {
@@ -48,7 +48,7 @@ impl<F: PrimeField> MultiLinearPoly<F> {
             }
         }
 
-        MultiLinearPoly::new(new_computation)
+        MultiLinearPoly::new(&new_computation)
     }
 
     pub fn evaluate(&mut self, eval_points: &[F]) -> Self {
@@ -56,7 +56,7 @@ impl<F: PrimeField> MultiLinearPoly<F> {
             panic!("The number of eval points must be equal to the number of variables");
         }
 
-        let mut this_computation = MultiLinearPoly::new(self.computation.clone());
+        let mut this_computation = MultiLinearPoly::new(&self.computation);
         let mut i = 0;
 
         while i < eval_points.len() {
@@ -99,7 +99,7 @@ mod test {
             Fq::from(8),
             Fq::from(12),
         ];
-        let multi_linear_poly = MultiLinearPoly::new(computation);
+        let multi_linear_poly = MultiLinearPoly::new(&computation);
 
         multi_linear_poly
     }
@@ -108,7 +108,7 @@ mod test {
     fn test_partial_evaluate() {
         // 2a + 3b
         let computation = vec![Fq::from(0), Fq::from(3), Fq::from(2), Fq::from(5)];
-        let mut multi_linear_poly = MultiLinearPoly::new(computation);
+        let mut multi_linear_poly = MultiLinearPoly::new(&computation);
 
         let eval_value = Fq::from(1);
         let eval_value_position = 0;
@@ -136,7 +136,7 @@ mod test {
             Fq::from(2),
             Fq::from(5),
         ];
-        let mut multi_linear_poly = MultiLinearPoly::new(computation);
+        let mut multi_linear_poly = MultiLinearPoly::new(&computation);
 
         let eval_value = Fq::from(3);
         let eval_value_position = 2;
@@ -151,7 +151,7 @@ mod test {
     #[test]
     fn test_evaluate() {
         let computation = vec![Fq::from(0), Fq::from(3), Fq::from(2), Fq::from(5)];
-        let mut multi_linear_poly = MultiLinearPoly::new(computation);
+        let mut multi_linear_poly = MultiLinearPoly::new(&computation);
 
         let eval_points = vec![Fq::from(1), Fq::from(1)];
         let result = multi_linear_poly.evaluate(&eval_points);
@@ -228,7 +228,7 @@ mod test {
     #[test]
     fn test_mul_add_evaluate() {
         let computation = vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)];
-        let mut poly = MultiLinearPoly::new(computation);
+        let mut poly = MultiLinearPoly::new(&computation);
 
         // using a random challenge r = 2 for a
         let eval_value = Fq::from(0);
@@ -242,7 +242,7 @@ mod test {
     #[test]
     fn test_w_evaluate() {
         let computation = vec![Fq::from(3), Fq::from(7), Fq::from(11), Fq::from(56)];
-        let mut poly = MultiLinearPoly::new(computation);
+        let mut poly = MultiLinearPoly::new(&computation);
 
         let eval_points = vec![Fq::from(1), Fq::from(1)];
         let result = poly.evaluate(&eval_points);
@@ -253,7 +253,7 @@ mod test {
     #[test]
     fn test_w_evaluate2() {
         let computation = vec![Fq::from(0), Fq::from(12)];
-        let mut poly = MultiLinearPoly::new(computation);
+        let mut poly = MultiLinearPoly::new(&computation);
 
         let eval_points = vec![Fq::from(2)];
         let result = poly.evaluate(&eval_points);

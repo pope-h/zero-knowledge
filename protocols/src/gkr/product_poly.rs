@@ -67,7 +67,7 @@ impl<F: PrimeField> ProductPoly<F> {
             new_array.push(prod);
         }
 
-        MultiLinearPoly::new(new_array)
+        MultiLinearPoly::new(&new_array)
     }
 
     pub fn univariate_to_evaluation(&self) -> Vec<F> {
@@ -101,8 +101,8 @@ mod test {
 
     #[test]
     fn test_product_poly() {
-        let poly_1 = MultiLinearPoly::new(vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(2)]);
-        let poly_2 = MultiLinearPoly::new(vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);
+        let poly_1 = MultiLinearPoly::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(2)]);
+        let poly_2 = MultiLinearPoly::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);
         let product_poly = ProductPoly::new(vec![poly_1, poly_2]);
         let result = product_poly.univariate_to_evaluation();
         assert_eq!(result, vec![Fq::from(0), Fq::from(6), Fq::from(24)]);
@@ -110,8 +110,8 @@ mod test {
 
     #[test]
     fn test_product_poly2() {
-        let poly_1 = MultiLinearPoly::new(vec![Fq::from(0), Fq::from(8)]);
-        let poly_2 = MultiLinearPoly::new(vec![Fq::from(0), Fq::from(12)]);
+        let poly_1 = MultiLinearPoly::new(&vec![Fq::from(0), Fq::from(8)]);
+        let poly_2 = MultiLinearPoly::new(&vec![Fq::from(0), Fq::from(12)]);
         let product_poly = ProductPoly::new(vec![poly_1, poly_2]);
         let result = product_poly.univariate_to_evaluation();
         assert_eq!(result, vec![Fq::from(0), Fq::from(96), Fq::from(384)]);
