@@ -83,7 +83,7 @@ pub fn verify<F: PrimeField>(proof: Proof<F>) -> SubClaim<F> {
     }
 
     for round_poly in proof.round_polys.iter() {
-        let verifier_sum = round_poly[0] + round_poly[1];
+        let verifier_sum = round_poly[0] + round_poly[1]; // This is doable because the round_poly is in its evaluation form
         if claimed_sum != verifier_sum {
             panic!("Claimed sum does not match verifier sum");
         }
@@ -94,6 +94,16 @@ pub fn verify<F: PrimeField>(proof: Proof<F>) -> SubClaim<F> {
         challenges.push(challenge);
 
         let equation = UnivariatePoly::interpolate(&xs, &round_poly);
+        /*
+            * This check below does the same as line 87 to 89
+         */
+        // let take1 = equation.evaluate(F::zero());
+        // let take2 = equation.evaluate(F::one());
+        // let sum = take1 + take2;
+        // dbg!(sum);
+        // if claimed_sum != sum {
+        //     panic!("Claimed sum does not match sum");
+        // }
         claimed_sum = equation.evaluate(challenge);
     }
 
@@ -135,7 +145,7 @@ mod tests {
         let init_claimed_sum = Fq::from(408);
 
         let proof = proof(vec![prod_poly.clone(), prod_poly], init_claimed_sum);
-        dbg!(&proof);
+        // dbg!(&proof);
         let verify = verify(proof);
         dbg!(&verify);
         assert_eq!(verify.challenges.len(), 3);

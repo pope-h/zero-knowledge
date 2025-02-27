@@ -260,4 +260,24 @@ mod test {
 
         dbg!(result);
     }
+
+    #[test]
+    fn test_evaluate_kzg() {
+        let computation = vec![Fq::from(-72), Fq::from(-68), Fq::from(-72), Fq::from(-68), Fq::from(-72), Fq::from(-68), Fq::from(-69), Fq::from(-65)];
+        let mut poly = MultiLinearPoly::new(&computation);
+
+        let eval_point = Fq::from(6);
+        let result = poly.partial_evaluate(eval_point, 0);
+        dbg!(&result);
+    }
+
+    #[test]
+    fn test_evaluate_kzg_2() {
+        let computation = vec![Fq::from(-72), Fq::from(-68), Fq::from(-54), Fq::from(-50)];
+        let mut poly = MultiLinearPoly::new(&computation);
+
+        let eval_point = Fq::from(4);
+        let result = poly.partial_evaluate(eval_point, 0);
+        dbg!(&result);
+    }
 }
