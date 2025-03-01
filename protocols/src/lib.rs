@@ -4,9 +4,8 @@ pub mod shamir_secret_sharing;
 pub mod sum_check;
 pub mod transcript;
 
-pub mod kzg_helper_functions;
-
 pub mod gkr;
+pub mod kzg;
 
 pub mod fiat_shamir_non_interactive;
 pub mod interactive_sum_check;
