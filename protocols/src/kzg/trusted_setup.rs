@@ -15,10 +15,20 @@ pub fn initialize<F: PrimeField, P: Pairing>(tau_arr: &[F]) -> TrustedSetup<P> {
     let g1_generator = P::G1::generator();
     let g2_generator = P::G2::generator();
 
-    let encrypted_basis_poly = lagrange_basis_arr.iter().map(|val| g1_generator.mul_bigint(val.into_bigint())).collect();
-    let encrypted_taus = tau_arr.iter().map(|tau| g2_generator.mul_bigint(tau.into_bigint())).collect();
+    let encrypted_basis_poly = lagrange_basis_arr
+        .iter()
+        .map(|val| g1_generator.mul_bigint(val.into_bigint()))
+        .collect();
+    let encrypted_taus = tau_arr
+        .iter()
+        .map(|tau| g2_generator.mul_bigint(tau.into_bigint()))
+        .collect();
 
-    TrustedSetup { max_input: max_arr_size, g1_arr: encrypted_basis_poly, g2_arr: encrypted_taus }
+    TrustedSetup {
+        max_input: max_arr_size,
+        g1_arr: encrypted_basis_poly,
+        g2_arr: encrypted_taus,
+    }
 }
 
 // SHOULD IMPLEMENT THE CONTRIBUTE FUNCTION IN THE FUTURE
@@ -42,12 +52,12 @@ pub fn compute_lagrange_basis<F: PrimeField>(tau_arr: &[F]) -> Vec<F> {
             // MSB-first order: 000, 001, 010, 011, 100, 101, 110, 111
             let msb_position = num_bits - 1 - bit_position;
 
-            let bit_is_one = (i & (1 << msb_position)) != 0;    // Check if the bit at position bit_position is 1
+            let bit_is_one = (i & (1 << msb_position)) != 0; // Check if the bit at position bit_position is 1
 
             let val = if bit_is_one {
                 tau_arr[bit_position as usize] // If bit is 1, use the variable directly
             } else {
-                F::one() - tau_arr[bit_position as usize]  // If bit is 0, use (1 - variable)
+                F::one() - tau_arr[bit_position as usize] // If bit is 0, use (1 - variable)
             };
 
             product = product * val;
@@ -102,7 +112,7 @@ pub mod tests {
 
         let a = example.mul_bigint(BlsFr::from(2).into_bigint());
         let b = g1_generator.mul_bigint(BlsFr::from(-16).into_bigint());
-        // dbg!(&a, &b);   
-        assert_eq!(a, b);    
+        // dbg!(&a, &b);
+        assert_eq!(a, b);
     }
 }

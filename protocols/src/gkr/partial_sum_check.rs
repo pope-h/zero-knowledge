@@ -95,7 +95,7 @@ pub fn verify<F: PrimeField>(proof: Proof<F>) -> SubClaim<F> {
 
         let equation = UnivariatePoly::interpolate(&xs, &round_poly);
         /*
-            * This check below does the same as line 87 to 89
+         * This check below does the same as line 87 to 89
          */
         // let take1 = equation.evaluate(F::zero());
         // let take2 = equation.evaluate(F::one());

@@ -13,7 +13,9 @@ impl<F: PrimeField> MultiLinearPoly<F> {
         if !computation.len().is_power_of_two() {
             panic!("The computation array must be in the power of 2");
         }
-        MultiLinearPoly { computation: computation.to_vec() }
+        MultiLinearPoly {
+            computation: computation.to_vec(),
+        }
     }
 
     fn variable_count(&self) -> u32 {
@@ -263,7 +265,16 @@ mod test {
 
     #[test]
     fn test_evaluate_kzg() {
-        let computation = vec![Fq::from(-72), Fq::from(-68), Fq::from(-72), Fq::from(-68), Fq::from(-72), Fq::from(-68), Fq::from(-69), Fq::from(-65)];
+        let computation = vec![
+            Fq::from(-72),
+            Fq::from(-68),
+            Fq::from(-72),
+            Fq::from(-68),
+            Fq::from(-72),
+            Fq::from(-68),
+            Fq::from(-69),
+            Fq::from(-65),
+        ];
         let mut poly = MultiLinearPoly::new(&computation);
 
         let eval_point = Fq::from(6);

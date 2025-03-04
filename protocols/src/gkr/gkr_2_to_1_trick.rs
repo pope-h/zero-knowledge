@@ -32,22 +32,20 @@ impl<F: PrimeField> Circuit<F> {
             mul_rc = mul_rc.partial_evaluate(r_c, 0);
         }
 
-        let new_add_values: Vec<F> = 
-            add_rb
-                .computation
-                .iter()
-                .zip(add_rc.computation.iter())
-                .map(|(&rb_val, &rc_val)| (alpha * rb_val) + (beta * rc_val))
-                .collect();
+        let new_add_values: Vec<F> = add_rb
+            .computation
+            .iter()
+            .zip(add_rc.computation.iter())
+            .map(|(&rb_val, &rc_val)| (alpha * rb_val) + (beta * rc_val))
+            .collect();
         let new_add = MultiLinearPoly::new(&new_add_values);
-        
-        let new_mul_values: Vec<F> =
-            mul_rb
-                .computation
-                .iter()
-                .zip(mul_rc.computation.iter())
-                .map(|(&rb_val, &rc_val)| (alpha * rb_val) + (beta * rc_val))
-                .collect();
+
+        let new_mul_values: Vec<F> = mul_rb
+            .computation
+            .iter()
+            .zip(mul_rc.computation.iter())
+            .map(|(&rb_val, &rc_val)| (alpha * rb_val) + (beta * rc_val))
+            .collect();
         let new_mul = MultiLinearPoly::new(&new_mul_values);
 
         (new_add, new_mul)

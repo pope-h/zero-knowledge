@@ -145,10 +145,16 @@ impl<F: PrimeField> Circuit<F> {
             let mid = challenges.len() / 2;
             let (r_b_challenges, r_c_challenges) = challenges.split_at(mid);
 
-            let w_i_b = MultiLinearPoly::new(&current_layer_w).evaluate(&r_b_challenges);
-            let w_i_c = MultiLinearPoly::new(&current_layer_w).evaluate(&r_c_challenges);
+            let w_i_b = MultiLinearPoly::new(&current_layer_w)
+                .evaluate(&r_b_challenges)
+                .computation[0];
+            let w_i_c = MultiLinearPoly::new(&current_layer_w)
+                .evaluate(&r_c_challenges)
+                .computation[0];
 
-            w_i_evals.push((w_i_b.computation[0], w_i_c.computation[0]));
+            transcript.absorb(&MultiLinearPoly::to_bytes(&[w_i_b, w_i_c]));
+
+            w_i_evals.push((w_i_b, w_i_c));
         }
 
         GKRProof {
@@ -189,6 +195,8 @@ impl<F: PrimeField> Circuit<F> {
                 let new_mul_eval = new_mul.evaluate(&challenges);
 
                 let (w_i_rb, w_i_rc) = proof.w_i_evals[i];
+                transcript.absorb(&MultiLinearPoly::to_bytes(&[w_i_rb, w_i_rc]));
+
                 let w_sum = w_i_rb + w_i_rc;
                 let w_mul = w_i_rb * w_i_rc;
 
@@ -217,6 +225,9 @@ impl<F: PrimeField> Circuit<F> {
 
         let input_eval_b = input_poly.evaluate(&r_b_challenges).computation[0];
         let input_eval_c = input_poly.evaluate(&r_c_challenges).computation[0];
+
+        transcript.absorb(&MultiLinearPoly::to_bytes(&[input_eval_b, input_eval_c]));
+
         let input_w_sum = input_eval_b + input_eval_c;
         let input_w_mul = input_eval_b * input_eval_c;
 
