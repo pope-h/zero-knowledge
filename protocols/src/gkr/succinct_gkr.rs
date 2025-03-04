@@ -35,6 +35,14 @@ impl<F: PrimeField> Circuit<F> {
         let mut r_a_challenges = Vec::new();
 
         //=========================================================================================
+        // First step to push the commitment to the transcript
+        //=========================================================================================
+        let input_poly = MultiLinearPoly::new(&self.inputs);
+        let commitment = compute_commitment::<F, P>(&input_poly, encrypted_basis);
+
+        transcript.absorb(commitment.to_string().as_bytes());
+
+        //=========================================================================================
         // GKR Proving Process
         //=========================================================================================
         let circuit_len = evaluated_circuit.len() - 1;
@@ -165,12 +173,16 @@ impl<F: PrimeField> Circuit<F> {
             let mid = challenges.len() / 2;
             let (r_b_challenges, r_c_challenges) = challenges.split_at(mid);
 
-            let w_i_b = MultiLinearPoly::new(&current_layer_w).evaluate(&r_b_challenges);
-            let w_i_c = MultiLinearPoly::new(&current_layer_w).evaluate(&r_c_challenges);
+            let w_i_b = MultiLinearPoly::new(&current_layer_w)
+                .evaluate(&r_b_challenges)
+                .computation[0];
+            let w_i_c = MultiLinearPoly::new(&current_layer_w)
+                .evaluate(&r_c_challenges)
+                .computation[0];
 
-            // transcript.absorb(&MultiLinearPoly::to_bytes(&[w_i_b, w_i_c]));
+            transcript.absorb(&MultiLinearPoly::to_bytes(&[w_i_b, w_i_c]));
 
-            w_i_evals.push((w_i_b.computation[0], w_i_c.computation[0]));
+            w_i_evals.push((w_i_b, w_i_c));
         }
 
         //=========================================================================================
@@ -178,9 +190,6 @@ impl<F: PrimeField> Circuit<F> {
         //=========================================================================================
         let mut quotient_evals_rb = Vec::new();
         let mut quotient_evals_rc = Vec::new();
-        let input_poly = MultiLinearPoly::new(&self.inputs);
-
-        let commitment = compute_commitment::<F, P>(&input_poly, encrypted_basis);
 
         // Get last challenges for the quotient evaluations
         let final_challenges = p_proofs.last().unwrap().challenges.clone();
@@ -249,6 +258,11 @@ impl<F: PrimeField> Circuit<F> {
         let mut last_idx = 0;
 
         //=========================================================================================
+        // First step to push the commitment to the transcript
+        //=========================================================================================
+        transcript.absorb(proof.commitment.to_string().as_bytes());
+
+        //=========================================================================================
         // GKR Verification Process
         //=========================================================================================
         let w_0_arr = proof.output_layer.clone();
@@ -272,6 +286,8 @@ impl<F: PrimeField> Circuit<F> {
                 let new_mul_eval = new_mul.evaluate(&challenges);
 
                 let (w_i_rb, w_i_rc) = proof.w_i_evals[i];
+                transcript.absorb(&MultiLinearPoly::to_bytes(&[w_i_rb, w_i_rc]));
+
                 let w_sum = w_i_rb + w_i_rc;
                 let w_mul = w_i_rb * w_i_rc;
 
@@ -346,6 +362,8 @@ impl<F: PrimeField> Circuit<F> {
         // Input layer is verified, now perform the GKR oracle check
         // f(b, c) = [add_i(b, c) * (w_i+1(b) + w_i+1(c))] + [mul_i(b,c) * (w_i+1(b) * w_i+1(c))]
         //=========================================================================================
+        transcript.absorb(&MultiLinearPoly::to_bytes(&[input_eval_b, input_eval_c]));
+
         let input_w_sum = input_eval_b + input_eval_c;
         let input_w_mul = input_eval_b * input_eval_c;
 
