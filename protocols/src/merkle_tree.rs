@@ -12,6 +12,11 @@ use sha2::{Digest, Sha256};
 // Layer 3 (Root)
 // vec![H(H(H(H(1) || H(2)) || H(H(3) || H(4))) || H(H(H(5) || H(6)) || H(H(7) || H(8))))],
 // ],
+
+// layers is a Vec<Vec<Vec<u8>>> where 
+    // the outer Vec represents the layers of the Merkle tree,
+    // the middle Vec represents the nodes in a layer, and 
+    // the inner Vec represents the hash of a node. i.e. hash fn returns Vec<u8>
 //=========================================================================================
 #[derive(Debug)]
 pub struct MerkleTree {
