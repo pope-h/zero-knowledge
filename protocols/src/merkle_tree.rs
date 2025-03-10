@@ -13,10 +13,10 @@ use sha2::{Digest, Sha256};
 // vec![H(H(H(H(1) || H(2)) || H(H(3) || H(4))) || H(H(H(5) || H(6)) || H(H(7) || H(8))))],
 // ],
 
-// layers is a Vec<Vec<Vec<u8>>> where 
-    // the outer Vec represents the layers of the Merkle tree,
-    // the middle Vec represents the nodes in a layer, and 
-    // the inner Vec represents the hash of a node. i.e. hash fn returns Vec<u8>
+// layers is a Vec<Vec<Vec<u8>>> where
+// the outer Vec represents the layers of the Merkle tree,
+// the middle Vec represents the nodes in a layer, and
+// the inner Vec represents the hash of a node. i.e. hash fn returns Vec<u8>
 //=========================================================================================
 #[derive(Debug)]
 pub struct MerkleTree {
@@ -30,6 +30,7 @@ pub struct MerkleTree {
 #[derive(Debug, Clone)]
 pub struct MerkleProof {
     pub siblings: Vec<Vec<u8>>,
+    pub leaf_index: usize,
 }
 
 impl MerkleTree {
@@ -100,7 +101,10 @@ impl MerkleTree {
             current_index /= 2;
         }
 
-        Some(MerkleProof { siblings })
+        Some(MerkleProof {
+            siblings,
+            leaf_index: index,
+        })
     }
 
     pub fn hash(data: &[u8]) -> Vec<u8> {
@@ -109,27 +113,10 @@ impl MerkleTree {
         hasher.finalize().to_vec()
     }
 
-    pub fn verify_proof(&self, leaf_data: &[u8], proof: &MerkleProof) -> bool {
+    pub fn verify_proof(&self, leaf_data: &[u8], proof: &MerkleProof, root: &[u8]) -> bool {
         let leaf_hash = MerkleTree::hash(leaf_data);
-
-        //=========================================================================================
-        // Find the index of the leaf
-        //=========================================================================================
-        let current_index = match self.layers[0].iter().position(|x| x == &leaf_hash) {
-            Some(index) => index,
-            None => return false,
-        };
-
-        let root = match self.root() {
-            Some(r) => r,
-            None => return false,
-        };
-
-        //=========================================================================================
-        // Start verification with the leaf hash
-        //=========================================================================================
         let mut current_hash = leaf_hash;
-        let mut idx = current_index;
+        let mut idx = proof.leaf_index;
 
         for sibling_hash in &proof.siblings {
             let combined = if idx % 2 == 0 {
@@ -157,10 +144,11 @@ mod tests {
         ];
 
         let tree = MerkleTree::new(&data);
+        let root = tree.root().unwrap();
 
         for leaf in data.iter() {
             let proof = tree.generate_proof(leaf).unwrap();
-            assert!(tree.verify_proof(leaf, &proof));
+            assert!(tree.verify_proof(leaf, &proof, &root));
         }
     }
 
@@ -175,6 +163,8 @@ mod tests {
         let tree = MerkleTree::new(&data);
         let input_to_prove = b"foo";
 
+        let root = tree.root().unwrap();
+
         // Generate the proof
         let proof = tree.generate_proof(input_to_prove).unwrap();
         println!(
@@ -187,7 +177,7 @@ mod tests {
         );
 
         // Verify the proof
-        let is_valid = tree.verify_proof(input_to_prove, &proof);
+        let is_valid = tree.verify_proof(input_to_prove, &proof, &root);
         assert!(is_valid);
     }
 
@@ -205,6 +195,8 @@ mod tests {
         let tree = MerkleTree::new(&data);
         let input_to_prove = b"6";
 
+        let root = tree.root().unwrap();
+
         // Generate the proof
         let proof = tree.generate_proof(input_to_prove).unwrap();
         println!(
@@ -217,7 +209,7 @@ mod tests {
         );
 
         // Verify the proof
-        let is_valid = tree.verify_proof(input_to_prove, &proof);
+        let is_valid = tree.verify_proof(input_to_prove, &proof, &root);
         assert!(is_valid);
     }
 }
