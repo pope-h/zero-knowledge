@@ -1,6 +1,6 @@
 use ark_ff::FftField;
 
-// implement the FFT algorithm
+#[derive(Debug)]
 pub struct FastFourierTransform<F: FftField> {
     pub coefficients: Vec<F>,
 }
@@ -102,7 +102,6 @@ impl<F: FftField> FastFourierTransform<F> {
         let n = self.coefficients.len() as u64;
         let y = self.interpolation().coefficients;
         let y_divided: Vec<F> = y.iter().map(|elem| *elem / F::from(n)).collect();
-        println!("{:?}", y);
 
         FastFourierTransform {
             coefficients: y_divided,
@@ -121,9 +120,9 @@ mod tests {
 
         let fft = FastFourierTransform::new(coefficients.clone());
         let values = fft.evaluate();
+        dbg!(&values);
         let interpolated = values.interpolate();
 
-        // assert_eq!(interpolated.coefficients, coefficients);
         assert_eq!(interpolated.coefficients, coefficients);
     }
 }
