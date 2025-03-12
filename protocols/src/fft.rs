@@ -42,6 +42,8 @@ impl<F: FftField> FastFourierTransform<F> {
 
         let n = self.coefficients.len() as u64;
         let w = self.root_of_unity();
+        // dbg!(&w);
+        // dbg!(F::get_root_of_unity(8));
 
         if n == 1 {
             return FastFourierTransform {
