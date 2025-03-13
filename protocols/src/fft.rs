@@ -6,7 +6,7 @@ pub struct FastFourierTransform<F: FftField> {
 }
 
 impl<F: FftField> FastFourierTransform<F> {
-    fn new(coefficients: Vec<F>) -> Self {
+    pub fn new(coefficients: Vec<F>) -> Self {
         FastFourierTransform { coefficients }
     }
 

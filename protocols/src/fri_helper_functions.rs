@@ -25,42 +25,48 @@ impl<F: FftField> FRIProtocol<F> {
 
         size
     }
+}
 
-    pub fn fold_poly(&self, r_challenge: F) -> Vec<F> {
-        let (even, odd) = self.split_poly();
+pub fn fold_poly<F: FftField>(poly: &[F], r_challenge: F) -> Vec<F> {
+    let (even, odd) = split_poly(poly);
 
-        even.iter()
-            .zip(odd.iter())
-            .map(|(e, o)| *e + (r_challenge * *o))
-            .collect()
-    }
+    even.iter()
+        .zip(odd.iter())
+        .map(|(e, o)| *e + (r_challenge * *o))
+        .collect()
+}
 
-    fn split_poly(&self) -> (Vec<F>, Vec<F>) {
-        let mut even = Vec::new();
-        let mut odd = Vec::new();
+pub fn split_poly<F: FftField>(poly: &[F]) -> (Vec<F>, Vec<F>) {
+    let mut even = Vec::new();
+    let mut odd = Vec::new();
 
-        for (i, coeff) in self.poly.iter().enumerate() {
-            if i % 2 == 0 {
-                even.push(*coeff);
-            } else {
-                odd.push(*coeff);
-            }
+    for (i, coeff) in poly.iter().enumerate() {
+        if i % 2 == 0 {
+            even.push(*coeff);
+        } else {
+            odd.push(*coeff);
         }
-
-        (even, odd)
     }
 
-    pub fn pad_vector_to_power_of_two(&self, vec: Vec<F>) -> Vec<F> {
-        let mut padded_vec = vec;
-        let domain_size = self.domain_size();
-        padded_vec.resize(domain_size, F::zero());
+    (even, odd)
+}
 
-        padded_vec
+pub fn pad_poly_to_power_of_two<F: FftField>(poly: Vec<F>) -> Vec<F> {
+    let mut padded_poly = poly;
+
+    let mut size = 1;
+    while size < padded_poly.len() {
+        size *= 2;
     }
+
+    padded_poly.resize(size, F::zero());
+
+    padded_poly
 }
 
 #[cfg(test)]
 mod test {
+    use super::*;
     use crate::fri_protocol::FRIProtocol;
     use ark_bn254::Fq;
 
@@ -89,10 +95,9 @@ mod test {
     #[test]
     fn test_fold_poly() {
         let poly = poly_1();
-        let fri_protocol = FRIProtocol::new(poly, 2);
 
         let r_challenge = Fq::from(2);
-        let folded_poly = fri_protocol.fold_poly(r_challenge);
+        let folded_poly = fold_poly(&poly, r_challenge);
 
         // (0 + 2*2) + (1 + 2*0) => 5
         let expected_folded_poly = vec![Fq::from(5)];
@@ -101,22 +106,15 @@ mod test {
     }
 
     #[test]
-    fn test_pad_vector_to_power_of_two() {
-        let poly = poly_1();
-        let fri_protocol = FRIProtocol::new(poly, 2);
-
-        let vec = vec![Fq::from(5), Fq::from(6), Fq::from(7)];
-        let padded_vec = fri_protocol.pad_vector_to_power_of_two(vec);
+    fn test_pad_poly_to_power_of_two() {
+        let poly = vec![Fq::from(5), Fq::from(6), Fq::from(7)];
+        let padded_vec = pad_poly_to_power_of_two(poly);
 
         let expected_padded_vec = vec![
             Fq::from(5),
             Fq::from(6),
             Fq::from(7),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(0),
+            Fq::from(0)
         ];
 
         assert_eq!(padded_vec, expected_padded_vec);
