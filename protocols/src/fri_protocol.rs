@@ -40,6 +40,7 @@ impl<F: FftField + PrimeField> FRIProtocol<F> {
         dbg!(num_rounds);
 
         for _i in 0..num_rounds {
+            dbg!(&eval_poly);
             let poly_string: Vec<String> = eval_poly.iter().map(|d| d.to_string()).collect();
             let poly_bytes: Vec<&[u8]> = poly_string.iter().map(|s| s.as_bytes()).collect();
 
@@ -58,7 +59,6 @@ impl<F: FftField + PrimeField> FRIProtocol<F> {
             eval_poly = fft.evaluate().coefficients;
             dbg!(&eval_poly.len());
         }
-        dbg!(&m_hashes.len());
 
         // Commitment { root_hashes, final_poly }
     }
