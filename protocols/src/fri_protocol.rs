@@ -1,6 +1,6 @@
 use ark_ff::{FftField, PrimeField};
 
-use crate::{fft::FastFourierTransform, fri_helper_functions::{fold_poly, pad_poly_to_power_of_two}, merkle_tree::MerkleTree, transcript::Transcript};
+use crate::{fft::FastFourierTransform, fri_helper_functions::{fold_poly, pad_poly_to_power_of_two}, merkle_tree::{MerkleProof, MerkleTree}, transcript::Transcript};
 
 pub struct FRIProtocol<F: FftField> {
     pub poly: Vec<F>,
@@ -11,6 +11,8 @@ pub struct FRIProtocol<F: FftField> {
 pub struct FRIProof<F: FftField> {
     pub root_hashes: Vec<Vec<u8>>,
     pub final_poly: Vec<F>,
+    pub values_at_index: Vec<F>,
+    pub values_at_index_proof: Vec<MerkleProof>,
 }
 
 impl<F: FftField + PrimeField> FRIProtocol<F> {
@@ -55,6 +57,16 @@ impl<F: FftField + PrimeField> FRIProtocol<F> {
             let fft = FastFourierTransform::new(padded_poly);
             eval_poly = fft.evaluate().coefficients;
         }
+
+        //=========================================================================================
+        // Sample a random index and get the evaluations at that index
+        //=========================================================================================
+        let verifier_field = F::from_be_bytes_mod_order(&transcript.squeeze());
+        let field_integer_repr = verifier_field.into_bigint().as_ref()[0];
+        let v_index = (field_integer_repr as usize) % self.poly.len();
+        dbg!(&v_index);
+
+        let values_at_index = self.poly[v_index];
 
         // Commitment { root_hashes, final_poly }
     }
