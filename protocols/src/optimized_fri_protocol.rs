@@ -15,7 +15,6 @@ pub struct OptimizedFRIProof<F: FftField> {
 }
 
 impl<F: FftField + PrimeField> FRIProtocol<F> {
-    // -> Commitment<F>
     // This fn can be made to take in num_rounds in future impl
     pub fn optimized_proof(&self) -> OptimizedFRIProof<F> {
         let mut transcript = Transcript::new();
@@ -145,11 +144,6 @@ impl<F: FftField + PrimeField> FRIProtocol<F> {
 
             v_index /= 2;
         }
-
-        dbg!(&all_evals);
-        dbg!(&v_at_index);
-        dbg!(&v_at_neg_index);
-        dbg!(&p_root);
 
         OptimizedFRIProof {
             root_hashes: m_hashes,
