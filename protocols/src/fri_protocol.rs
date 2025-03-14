@@ -1,6 +1,6 @@
 use ark_ff::{FftField, PrimeField};
 
-use crate::{fft::FastFourierTransform, fri_helper_functions::fold_poly, merkle_tree::MerkleTree, transcript::Transcript};
+use crate::{fft::FastFourierTransform, fri_helper_functions::{fold_poly, pad_poly_to_power_of_two}, merkle_tree::MerkleTree, transcript::Transcript};
 
 pub struct FRIProtocol<F: FftField> {
     pub poly: Vec<F>,
@@ -26,38 +26,34 @@ impl<F: FftField + PrimeField> FRIProtocol<F> {
     // -> Commitment<F>
     // This fn can be made to take in num_rounds in future impl
     pub fn generate_proof(&self) {
-        // let this_poly = FRIProtocol::new(poly, blowup_factor);
         let mut transcript = Transcript::new();
         let mut m_hashes = vec![];
 
+        let mut f_poly = self.poly.clone();
+
         let padded_poly = self.pad_to_power_of_two();
-        dbg!(padded_poly.len());
         let fft = FastFourierTransform::new(padded_poly);
         let mut eval_poly = fft.evaluate().coefficients;
-        dbg!(&eval_poly.len());
 
         let num_rounds = eval_poly.len().ilog2();
-        dbg!(num_rounds);
 
         for _i in 0..num_rounds {
-            dbg!(&eval_poly);
             let poly_string: Vec<String> = eval_poly.iter().map(|d| d.to_string()).collect();
             let poly_bytes: Vec<&[u8]> = poly_string.iter().map(|s| s.as_bytes()).collect();
-
+        
             let m_tree = MerkleTree::new(&poly_bytes);
             let m_root = m_tree.root().unwrap();
-
+        
             transcript.absorb(&m_root);
             m_hashes.push(m_root);
-
-            dbg!("Got here");
+        
             let r = F::from_be_bytes_mod_order(&transcript.squeeze());
-            dbg!(&r);
-            let current_poly = fold_poly(&eval_poly, r);
 
-            let fft = FastFourierTransform::new(current_poly);
+            f_poly = fold_poly(&f_poly, r);
+            let padded_poly = pad_poly_to_power_of_two(&f_poly);
+        
+            let fft = FastFourierTransform::new(padded_poly);
             eval_poly = fft.evaluate().coefficients;
-            dbg!(&eval_poly.len());
         }
 
         // Commitment { root_hashes, final_poly }

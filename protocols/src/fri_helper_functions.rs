@@ -28,6 +28,10 @@ impl<F: FftField> FRIProtocol<F> {
 }
 
 pub fn fold_poly<F: FftField>(poly: &[F], r_challenge: F) -> Vec<F> {
+    if poly.len() == 1 {
+        return vec![poly[0]];
+    }
+
     let (even, odd) = split_poly(poly);
 
     even.iter()
@@ -51,13 +55,13 @@ pub fn split_poly<F: FftField>(poly: &[F]) -> (Vec<F>, Vec<F>) {
     (even, odd)
 }
 
-pub fn pad_poly_to_power_of_two<F: FftField>(poly: Vec<F>) -> Vec<F> {
-    let mut padded_poly = poly;
-
-    let mut size = 1;
-    while size < padded_poly.len() {
-        size *= 2;
+pub fn pad_poly_to_power_of_two<F: FftField>(poly: &[F]) -> Vec<F> {
+    if !poly.len().is_power_of_two() {
+        panic!("The computation array must be in the power of 2");
     }
+
+    let mut padded_poly = poly.to_vec();
+    let size = 2 * padded_poly.len();
 
     padded_poly.resize(size, F::zero());
 
@@ -107,13 +111,13 @@ mod test {
 
     #[test]
     fn test_pad_poly_to_power_of_two() {
-        let poly = vec![Fq::from(5), Fq::from(6), Fq::from(7)];
-        let padded_vec = pad_poly_to_power_of_two(poly);
+        let poly = vec![Fq::from(5), Fq::from(6)];
+        let padded_vec = pad_poly_to_power_of_two(&poly);
 
         let expected_padded_vec = vec![
             Fq::from(5),
             Fq::from(6),
-            Fq::from(7),
+            Fq::from(0),
             Fq::from(0)
         ];
 
