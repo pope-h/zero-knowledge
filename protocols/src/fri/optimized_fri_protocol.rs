@@ -5,7 +5,7 @@ use ark_ff::{FftField, PrimeField};
 use crate::{
     fri::fft::FastFourierTransform,
     fri::fri_protocol::FRIProtocol,
-    merkle_tree::{MerkleProof, MerkleTree},
+    fri::merkle_tree::{MerkleProof, MerkleTree},
     transcript::Transcript,
 };
 

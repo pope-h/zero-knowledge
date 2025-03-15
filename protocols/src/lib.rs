@@ -1,4 +1,3 @@
-pub mod merkle_tree;
 pub mod multi_linear;
 pub mod shamir_secret_sharing;
 pub mod sum_check;

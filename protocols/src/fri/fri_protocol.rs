@@ -3,7 +3,7 @@ use ark_ff::{FftField, PrimeField};
 use crate::{
     fri::fft::FastFourierTransform,
     fri::fri_helper_functions::{fold_poly, pad_poly_to_power_of_two},
-    merkle_tree::{MerkleProof, MerkleTree},
+    fri::merkle_tree::{MerkleProof, MerkleTree},
     transcript::Transcript,
 };
 
