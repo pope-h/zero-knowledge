@@ -114,12 +114,7 @@ mod test {
         let poly = vec![Fq::from(5), Fq::from(6)];
         let padded_vec = pad_poly_to_power_of_two(&poly);
 
-        let expected_padded_vec = vec![
-            Fq::from(5),
-            Fq::from(6),
-            Fq::from(0),
-            Fq::from(0)
-        ];
+        let expected_padded_vec = vec![Fq::from(5), Fq::from(6), Fq::from(0), Fq::from(0)];
 
         assert_eq!(padded_vec, expected_padded_vec);
     }
