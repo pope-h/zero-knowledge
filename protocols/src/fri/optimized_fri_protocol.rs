@@ -3,8 +3,8 @@ use std::vec;
 use ark_ff::{FftField, PrimeField};
 
 use crate::{
-    fft::FastFourierTransform,
-    fri_protocol::FRIProtocol,
+    fri::fft::FastFourierTransform,
+    fri::fri_protocol::FRIProtocol,
     merkle_tree::{MerkleProof, MerkleTree},
     transcript::Transcript,
 };

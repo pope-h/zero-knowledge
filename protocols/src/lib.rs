@@ -1,13 +1,10 @@
-pub mod fft;
-pub mod fri_helper_functions;
-pub mod fri_protocol;
 pub mod merkle_tree;
 pub mod multi_linear;
-pub mod optimized_fri_protocol;
 pub mod shamir_secret_sharing;
 pub mod sum_check;
 pub mod transcript;
 
+pub mod fri;
 pub mod gkr;
 pub mod kzg;
 

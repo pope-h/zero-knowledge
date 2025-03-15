@@ -1,6 +1,6 @@
 use ark_ff::FftField;
 
-use crate::fri_protocol::FRIProtocol;
+use crate::fri::fri_protocol::FRIProtocol;
 
 impl<F: FftField> FRIProtocol<F> {
     pub fn pad_to_power_of_two(&self) -> Vec<F> {
@@ -71,7 +71,7 @@ pub fn pad_poly_to_power_of_two<F: FftField>(poly: &[F]) -> Vec<F> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::fri_protocol::FRIProtocol;
+    use crate::fri::fri_protocol::FRIProtocol;
     use ark_bn254::Fq;
 
     fn poly_1() -> Vec<Fq> {
