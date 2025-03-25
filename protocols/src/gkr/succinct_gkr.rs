@@ -384,7 +384,10 @@ mod test {
         kzg::trusted_setup::tests::setup,
     };
 
-    use ark_bls12_381::{Bls12_381, Fr as BlsFr};
+    use field_tracker::{print_summary, Ft};
+    type BlsFr = Ft!(ark_bls12_381::Fr);
+
+    use ark_bls12_381::Bls12_381;
 
     pub fn setup_test_circuit_s() -> Circuit<BlsFr> {
         let inputs = vec![
@@ -470,6 +473,7 @@ mod test {
         // dbg!(&result);
 
         circuit.succinct_proof::<Bls12_381>(&setup.g1_arr);
+        print_summary!();
     }
 
     #[test]
@@ -481,5 +485,6 @@ mod test {
         let result = circuit.succinct_verify::<Bls12_381>(&proof, &setup.g2_arr);
 
         assert!(&result);
+        print_summary!();
     }
 }

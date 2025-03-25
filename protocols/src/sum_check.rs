@@ -88,7 +88,30 @@ pub fn verify<F: PrimeField>(mut proof: Proof<F>) -> bool {
 mod tests {
     use super::*;
     use crate::multi_linear::MultiLinearPoly;
-    use ark_bn254::Fq;
+    use ark_ff::UniformRand;
+    use field_tracker::{print_summary, Ft};
+    type Fq = Ft!(ark_bn254::Fq);
+    // use ark_bn254::Fq;
+
+    pub fn generate_random_poly() -> MultiLinearPoly<Fq> {
+        let mut rng = rand::thread_rng();
+        let mut poly = vec![];
+        for _ in 0..(1 << 20) {
+            poly.push(Fq::rand(&mut rng));
+        }
+        dbg!(&poly.len());
+        MultiLinearPoly::new(&poly)
+    }
+
+    #[test]
+    fn test_verify_with_field_tracker() {
+        let poly = generate_random_poly();
+        let init_claimed_sum = poly.computation.iter().sum();
+        let proof = proof(poly.clone(), init_claimed_sum);
+        let result = verify(proof);
+        assert!(result);
+        print_summary!();
+    }
 
     #[test]
     fn test_proof() {
@@ -116,6 +139,7 @@ mod tests {
 
         println!("init_claimed_sum is {:?}", init_claimed_sum);
         assert_eq!(init_claimed_sum, Fq::from(48));
+        print_summary!();
     }
 
     #[test]
